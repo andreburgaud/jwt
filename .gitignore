@@ -1,4 +1,5 @@
 # binaries
 jwt
+*.zip
 tests/tester
 tests/tester.dSYM
