@@ -37,6 +37,11 @@ proc writeHelp =
   writeInfo()
   let app = appName()
   echo()
+  printInfo "Description:"
+  echo "  Parses an encoded JSON Web Token (JWT) "
+  echo "  and extracts the JWT Header and Payload "
+  echo "  into a valid JSON content."
+  echo()
   printInfo "Usage:"
   printField  &"  {app}", " --extract <jwt_file>"
   printField  &"  {app}", " -x <jwt_file>"

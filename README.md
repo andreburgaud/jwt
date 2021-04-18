@@ -86,9 +86,14 @@ $ cat tokens/hs256.token | jwt -x | jq
 
 ```
 $ jwt
-                                            JWT Command Line 0.2.0
-                                      Copyright (c) 2021 - Andre Burgaud
-                                                  MIT License
+                    JWT Command Line 0.2.0
+              Copyright (c) 2021 - Andre Burgaud
+                         MIT License
+
+Description:
+  Parses an encoded JSON Web Token (JWT)
+  and extracts the JWT Header and Payload
+  into a valid JSON content.
 
 Usage:
   jwt --extract <jwt_file>
