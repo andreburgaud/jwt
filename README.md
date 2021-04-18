@@ -1,6 +1,6 @@
 # JSON Web Token (JWT)
 
-The initial version takes the command `--extract` and a JWT token, either a string with option --string, or one or multiple files, then print the content of the header and payload to the output in valid JSON format.
+The initial version of this tool takes a command **extract**, `--extract` or `-x`, and a [JSON Web Token](https://jwt.io/) (JWT), either as a string with option `--string`, or as one or multiple files passed as arguments, then prints the content of the header and payload to the output in valid JSON format.
 
 ## Usage Examples
 
@@ -63,6 +63,25 @@ $ jwt --extract tokens/hs256.token | jq
 
 The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data.
 
+### From stdin
+
+```
+$ cat tokens/hs256.token | jwt -x | jq
+```
+```json
+[
+  {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  {
+    "sub": "1234567890",
+    "name": "John Doe",
+    "iat": 1516239022
+  }
+]
+```
+
 ## TODO
 
 ### Commands
@@ -99,4 +118,5 @@ $ upx jwt # optional
 ## Resources
 
 * https://tools.ietf.org/html/rfc7519
+* https://jwt.io/
 * https://stedolan.github.io/jq/
