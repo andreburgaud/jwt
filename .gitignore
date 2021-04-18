@@ -1,5 +1,4 @@
-# binaries
-jwt
-*.zip
+bin/
+dist/
 tests/tester
 tests/tester.dSYM
