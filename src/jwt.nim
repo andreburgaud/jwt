@@ -18,7 +18,7 @@ proc printSuccess(msg: string) =
   styledEcho fgGreen, styleBright, msg
 
 proc printError(msg: string) =
-  styledWriteLine stderr, fgRed, "Error: ", resetStyle, msg
+  styledWriteLine stderr, fgRed, styleBright, "Error: ", resetStyle, msg
 
 proc printField(key: string, value: string) =
   styledWriteLine stdout, styleBright, key, resetStyle, value
@@ -109,8 +109,8 @@ proc main* =
   ## to the proper function based on the commands and options
   ## extracted from the command line.
 
-  # Options
-  var optExtract = false
+  # Commands
+  var cmdExtract = false
 
   # Arguments
   var args: seq[string] = @[]
@@ -130,14 +130,14 @@ proc main* =
       of "help", "h": writeHelp(); return
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
-      of "extract", "x": optExtract = true
+      of "extract", "x": cmdExtract = true
       else: printError &"unexpected option '{key}'"; errorOption = true
 
   if errorOption:
     quit QuitFailure
 
   # Extract (option -x | --extract)
-  if optExtract:
+  if cmdExtract:
 
     if jwtStr.len == 0 and args.len == 0: # stdin
       jwtStr = stdin.readAll()
@@ -166,6 +166,11 @@ proc main* =
           quit QuitFailure
 
   else:
+    printError "No command were given. Existing commands are: "
+    printField "  --extract (-x)", ": to extract a JWT Header and Payload"
+    printField "  --help (-h)   ", ": to display the usage"
+    printField "  --version (-v)", ": to display the version"
+    echo()
     writeHelp()
   
 when isMainModule:
