@@ -33,6 +33,7 @@ proc writeVersion =
   printSuccess &"{appName()} version {NimblePkgVersion}"
 
 proc writeHelp =
+  ## Displays the help (usage) for the command line tool
   writeInfo()
   let app = appName()
   echo()
@@ -51,37 +52,56 @@ proc writeHelp =
   printField "  -v | --version ",  ": show version"
   echo()
 
-proc splitJwt*(data: string): (string, string, string) =
+proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException, ValueError, IOError].} =
+  ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
+  ## is separated by a dot ``.``
+
   let fields = data.split(".")
   let lenFields = len(fields)
   if lenFields != 3:
-    let msg = &"JWT token with {lenFields} parts (expected: 3) '{data}'"
+    let msg = &"JWT token with {lenFields} parts instead of 3 (encoded: '{data}')"
     printError msg
     raise newException(JwtException, msg)
   (fields[0], fields[1], fields[2])
 
-proc extractJwtStr(data: string) =
+proc extractJwtStr*(data: string): string =
+  ## Extracts the 2 first parts of the JWT and base64-decodes them before
+  ## concatenating them into a valid JSON payload: a list of 2 objects
+  ## with the first object containing the JWT header and the second object
+  ## representing the JWT payload. For example:
+  ## .. code-block:: json
+  ##   [{"alg":"HS256","typ":"JWT"},{"sub":"1234567890","name":"John Doe","iat":1516239022}]
+  ##
+
+  let (header, payload, _) = splitJwt(data)
+  let jsonHeader = decode(header)
+  let jsonPayload = decode(payload)
+  &"[{jsonHeader},{jsonPayload}]"
+ 
+proc writeJwtStr(data: string) =
+  ## Writes a prettyfied JSON output to stdout, given a JWT string
+
+  let jsonStr = extractJwtStr(data)
   try:
-    let (header, payload, _) = splitJwt(data)
-    let jsonHeader = decode(header)
-    let jsonPayload = decode(payload)
-    let jsonStr = &"[{jsonHeader},{jsonPayload}]"
     echo pretty(parseJson(jsonStr))
   except JsonParsingError:
-    printError &"invalid JWT '{data}'"
+    printError &"invalid JWT (encoded: '{data}')"
+    printError &"invalid JWT (decoded: '{jsonStr}')"
+    raise
 
-  except JwtException:
-    return # Continue processing other files
+proc writeJwtFile(file: string) =
+  ## Write a prettified JSON output to stdout, given a JWT file
 
-proc extractJwtFile(file: string) =
   if not os.fileExists(file):
     printError &"file {file} does not exist"
     return
-
   let data = readFile(file)
-  extractJwtStr(data)
+  writeJwtStr(data.strip())
 
 proc main* =
+  ## Handles the command line argements parsing and dispatches the
+  ## to the proper function based on the commands and options
+  ## extracted from the command line.
 
   # Options
   var optExtract = false
@@ -121,15 +141,23 @@ proc main* =
         quit QuitFailure
 
     if len(jwtStr) > 0: # argument is a string
-      extractJwtStr jwtStr.strip()
-      return
+      try:
+        writeJwtStr jwtStr.strip()
+      except JwtException:
+        quit QuitFailure
+      finally:
+        quit QuitSuccess
 
     # arguments are files 
     let multiFiles = len(args) > 1
     for arg in args:
       if multiFiles:
         styledWriteLine stderr, styleBright, &"\n{arg}:"
-      extractJwtFile arg
+      try:
+        writeJwtFile arg
+      except:
+        if not multiFiles:
+          quit QuitFailure
 
   else:
     writeHelp()
