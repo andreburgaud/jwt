@@ -59,9 +59,8 @@ proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException, 
   ## is separated by a dot ``.``
 
   let fields = data.split(".")
-  let lenFields = len(fields)
-  if lenFields != 3:
-    let msg = &"JWT token with {lenFields} parts instead of 3 (encoded: '{data}')"
+  if fields.len != 3:
+    let msg = &"JWT token with {fields.len} parts instead of 3 (encoded: '{data}')"
     printError msg
     raise newException(JwtException, msg)
   (fields[0], fields[1], fields[2])
@@ -75,17 +74,17 @@ proc extractJwtStr*(data: string): string =
   ##   [{"alg":"HS256","typ":"JWT"},{"sub":"1234567890","name":"John Doe","iat":1516239022}]
   ##
 
-  let (header, payload, _) = splitJwt(data)
-  let jsonHeader = decode(header)
-  let jsonPayload = decode(payload)
+  let (header, payload, _) = splitJwt data
+  let jsonHeader = decode header
+  let jsonPayload = decode payload
   &"[{jsonHeader},{jsonPayload}]"
  
 proc writeJwtStr(data: string) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string
 
-  let jsonStr = extractJwtStr(data)
+  let jsonStr = extractJwtStr data
   try:
-    echo pretty(parseJson(jsonStr))
+    echo pretty parseJson(jsonStr)
   except JsonParsingError:
     printError &"invalid JWT (encoded: '{data}')"
     printError &"invalid JWT (decoded: '{jsonStr}')"
@@ -97,8 +96,8 @@ proc writeJwtFile(file: string) =
   if not os.fileExists(file):
     printError &"file {file} does not exist"
     return
-  let data = readFile(file)
-  writeJwtStr(data.strip())
+  let data = readFile file
+  writeJwtStr data.strip()
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
@@ -120,7 +119,7 @@ proc main* =
     case kind
     of cmdEnd: break
     of cmdArgument:
-      args.add(key)
+      args.add key
     of cmdLongOption, cmdShortOption:
       case key
       of "help", "h": writeHelp(); return
@@ -135,14 +134,14 @@ proc main* =
   # Extract (option -x | --extract)
   if optExtract:
 
-    if len(jwtStr) == 0 and len(args) == 0: # stdin
+    if jwtStr.len == 0 and args.len == 0: # stdin
       jwtStr = stdin.readAll()
       echo()
-      if len(jwtStr) == 0:
+      if jwtStr.len == 0:
         printError "JWT cannot be empty"
         quit QuitFailure
 
-    if len(jwtStr) > 0: # argument is a string
+    if jwtStr.len > 0: # argument is a string
       try:
         writeJwtStr jwtStr.strip()
       except JwtException:
@@ -151,7 +150,7 @@ proc main* =
         quit QuitSuccess
 
     # arguments are files 
-    let multiFiles = len(args) > 1
+    let multiFiles = args.len > 1
     for arg in args:
       if multiFiles:
         styledWriteLine stderr, styleBright, &"\n{arg}:"
