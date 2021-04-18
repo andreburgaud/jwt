@@ -1,3 +1,5 @@
+# binary generated in the project root:
+/jwt
 bin/
 dist/
 tests/tester

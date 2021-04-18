@@ -1,36 +1,43 @@
 import base64, json, os, parseopt, strformat, strutils, terminal
+import jwt/common
 
 const
   NAME = "JWT Command Line"
   COPYRIGHT = "Copyright (c) 2021 - Andre Burgaud"
   LICENSE = "MIT License"
-  NimblePkgVersion {.strdefine.} = "Unknown"
   
 type JwtException* = object of ValueError
 
 proc appName: string =
+  ## Retrieves the application name from the executable
   getAppFilename().extractFilename()
 
 proc printInfo(msg: string) =
+  ## Print information message with a predefined style (default yellow)
   styledEcho fgYellow, styleBright, msg
 
 proc printSuccess(msg: string) =
+  ## Print success message with a predefined style (default greed)
   styledEcho fgGreen, styleBright, msg
 
 proc printError(msg: string) =
+  ## Print error message with a predefined styled (default red) header "Error:"
   styledWriteLine stderr, fgRed, styleBright, "Error: ", resetStyle, msg
 
 proc printField(key: string, value: string) =
+  ## Print a key in bright style followed by a value in default style
   styledWriteLine stdout, styleBright, key, resetStyle, value
 
 proc writeInfo = 
+  ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
-  styledEcho fgGreen, center(&"{NAME} {NimblePkgVersion}", width - 10)
+  styledEcho fgGreen, center(&"{NAME} {VERSION}", width - 10)
   styledEcho fgGreen, center(COPYRIGHT, width - 10)
   styledEcho fgGreen, center(LICENSE, width - 10)
 
 proc writeVersion =
-  printSuccess &"{appName()} version {NimblePkgVersion}"
+  ## Write the app version 
+  printSuccess &"{appName()} version {VERSION}"
 
 proc writeHelp =
   ## Displays the help (usage) for the command line tool

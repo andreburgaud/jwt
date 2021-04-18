@@ -1,8 +1,9 @@
 import strformat
+import src/jwt/common
 
 # Package
 
-version       = "0.2.0"
+version       = VERSION
 author        = "Andre"
 description   = "JWT Command Line"
 license       = "MIT"
