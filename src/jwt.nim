@@ -45,11 +45,13 @@ proc writeHelp =
   printField  &"  {app}", " -v | --version"
   printField  &"  {app}", " -h | --help"
   echo()
-  printInfo "Options:"
+  printInfo "Commands:"
   printField "  -x | --extract ",  ": extract JWT token into a valid JSON string"
-  printField "  -s | --string  ",  ": take a JWT token string as argument"
   printField "  -h | --help    ",  ": show this screen"
   printField "  -v | --version ",  ": show version"
+  echo()
+  printInfo "Options:"
+  printField "  -s | --string  ",  ": take a JWT token string as argument instead of file"
   echo()
 
 proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException, ValueError, IOError].} =

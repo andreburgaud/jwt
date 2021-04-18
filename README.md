@@ -85,10 +85,10 @@ $ cat tokens/hs256.token | jwt -x | jq
 ### Help
 
 ```
-$  jwt --help
-                    JWT Command Line 0.1.0
-              Copyright (c) 2021 - Andre Burgaud
-                         MIT License
+$ jwt
+                                            JWT Command Line 0.2.0
+                                      Copyright (c) 2021 - Andre Burgaud
+                                                  MIT License
 
 Usage:
   jwt --extract <jwt_file>
@@ -98,11 +98,13 @@ Usage:
   jwt -v | --version
   jwt -h | --help
 
-Options:
+Commands:
   -x | --extract : extract JWT token into a valid JSON string
-  -s | --string  : take a JWT token string as argument
   -h | --help    : show this screen
   -v | --version : show version
+
+Options:
+  -s | --string  : take a JWT token string as argument instead of file
 ```
 
 ## TODO
