@@ -49,5 +49,5 @@ task fmt, "Format Nim source files (https://nim-lang.org/docs/nep1.html)":
 
 task tag, "Push the commits to repo and generate a new tag":
     exec "git push"
-    exec "git tag -a {version} -m 'Version {version}'"
+    exec &"git tag -a {version} -m 'Version {version}'"
     exec "git push --tags"
