@@ -1,6 +1,6 @@
 # binary generated in the project root:
-/jwt
 bin/
 dist/
 tests/tester
 tests/tester.dSYM
+tokens/out

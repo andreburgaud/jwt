@@ -128,7 +128,7 @@ Options:
 ### Build
 
 ```
-$ nimble build --verbose
+$ nimble dev
 ```
 
 ### Test
@@ -140,9 +140,13 @@ $ nimble test
 ### Release
 
 ```
-$ nimble build --d:release --opt:size
-$ strip jwt
-$ upx jwt # optional
+$ nimble release
+```
+
+### Dist
+
+```
+$ nimble dist
 ```
 
 ## Resources

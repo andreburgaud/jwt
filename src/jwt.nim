@@ -1,11 +1,11 @@
-import base64, json, os, parseopt, strformat, strutils, terminal
+import base64, json, os, parseopt, strformat, strutils, terminal, times
 import jwt/common
 
 const
   NAME = "JWT Command Line"
   COPYRIGHT = "Copyright (c) 2021 - Andre Burgaud"
   LICENSE = "MIT License"
-  
+
 type JwtException* = object of ValueError
 
 proc appName: string =
@@ -28,7 +28,7 @@ proc printField(key: string, value: string) =
   ## Print a key in bright style followed by a value in default style
   styledWriteLine stdout, styleBright, key, resetStyle, value
 
-proc writeInfo = 
+proc writeInfo =
   ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
   styledEcho fgGreen, center(&"{NAME} {VERSION}", width - 10)
@@ -36,7 +36,7 @@ proc writeInfo =
   styledEcho fgGreen, center(LICENSE, width - 10)
 
 proc writeVersion =
-  ## Write the app version 
+  ## Write the app version
   printSuccess &"{appName()} version {VERSION}"
 
 proc writeHelp =
@@ -45,28 +45,33 @@ proc writeHelp =
   let app = appName()
   echo()
   printInfo "Description:"
-  echo "  Parses an encoded JSON Web Token (JWT) "
-  echo "  and extracts the JWT Header and Payload "
-  echo "  into a valid JSON content."
+  echo "  Parses an encoded JSON Web Token (JWT) and extracts the "
+  echo "  JWT Header and Payload into a valid JSON content."
+  echo "  Converts dates (iat, exp) into human readable format unless "
+  echo "  the option '--raw' is passed at the command line."
   echo()
   printInfo "Usage:"
-  printField  &"  {app}", " --extract <jwt_file>"
-  printField  &"  {app}", " -x <jwt_file>"
-  printField  &"  {app}", " --extract --string <jwt_string>"
-  printField  &"  {app}", " -x -s<jwt_string>"
-  printField  &"  {app}", " -v | --version"
-  printField  &"  {app}", " -h | --help"
+  printField &"  {app}", " --extract <jwt_file>"
+  printField &"  {app}", " -x <jwt_file>"
+  printField &"  {app}", " --extract --string <jwt_string>"
+  printField &"  {app}", " -x -s<jwt_string>"
+  printField &"  {app}", " --extract --raw --string <jwt_string>"
+  printField &"  {app}", " -x -r -s<jwt_string>"
+  printField &"  {app}", " -v | --version"
+  printField &"  {app}", " -h | --help"
   echo()
   printInfo "Commands:"
-  printField "  -x | --extract ",  ": extract JWT token into a valid JSON string"
-  printField "  -h | --help    ",  ": show this screen"
-  printField "  -v | --version ",  ": show version"
+  printField "  -x | --extract ", ": extract JWT token into a valid JSON string"
+  printField "  -h | --help    ", ": show this screen"
+  printField "  -v | --version ", ": show version"
   echo()
   printInfo "Options:"
-  printField "  -s | --string  ",  ": take a JWT token string as argument instead of file"
+  printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
+  printField "  -r | --raw     ", ": keep the dates (iat, exp) as a numeric values (epoch time)"
   echo()
 
-proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException, ValueError, IOError].} =
+proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
+    ValueError, IOError].} =
   ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
   ## is separated by a dot ``.``
 
@@ -90,34 +95,55 @@ proc extractJwtStr*(data: string): string =
   let jsonHeader = decode header
   let jsonPayload = decode payload
   &"[{jsonHeader},{jsonPayload}]"
- 
-proc writeJwtStr(data: string) =
+
+proc convertTime(intNode: JsonNode): JsonNode =
+  ## Convert time from a JsonNode (epoch time) to a formatted time as JSON Date
+  let value = getInt(intNode).int64
+  let dt = format(initTime(value, 0), "yyyy-MM-dd'T'HH:mm:sszzz")
+  return %dt
+
+proc writeJwtStr(data: string, raw: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string
 
+  var jsonData: JsonNode
   let jsonStr = extractJwtStr data
+
   try:
-    echo pretty parseJson(jsonStr)
+    jsonData = parseJson(jsonStr)
   except JsonParsingError:
     printError &"invalid JWT (encoded: '{data}')"
     printError &"invalid JWT (decoded: '{jsonStr}')"
     raise
 
-proc writeJwtFile(file: string) =
+  if raw:
+    # -r or --raw option was passed at the command line
+    echo pretty jsonData
+  else:
+    # converts dates into human readable dates
+    # For example 1627425118 is converted to "2021-07-27T17:31:58-05:00"
+    if jsonData[1].hasKey("exp"):
+      jsonData[1]["exp"] = convertTime(jsonData[1]["exp"])
+    if jsonData[1].hasKey("iat"):
+      jsonData[1]["iat"] = convertTime(jsonData[1]["iat"])
+    echo pretty jsonData
+
+proc writeJwtFile(file: string, raw: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file
 
   if not os.fileExists(file):
     printError &"file {file} does not exist"
     return
   let data = readFile file
-  writeJwtStr data.strip()
+  writeJwtStr data.strip(), raw
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
   ## to the proper function based on the commands and options
   ## extracted from the command line.
 
-  # Commands
+  # Commands / Options
   var cmdExtract = false
+  var isRaw = false
 
   # Arguments
   var args: seq[string] = @[]
@@ -126,7 +152,7 @@ proc main* =
   var jwtStr: string
 
   var errorOption = false
-  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'x'}, 
+  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'x'},
                                longNoVal = @["help", "version", "extract"]):
     case kind
     of cmdEnd: break
@@ -138,6 +164,7 @@ proc main* =
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
       of "extract", "x": cmdExtract = true
+      of "raw", "r": isRaw = true
       else: printError &"unexpected option '{key}'"; errorOption = true
 
   if errorOption:
@@ -155,19 +182,19 @@ proc main* =
 
     if jwtStr.len > 0: # argument is a string
       try:
-        writeJwtStr jwtStr.strip()
+        writeJwtStr jwtStr.strip(), isRaw
       except JwtException:
         quit QuitFailure
       finally:
         quit QuitSuccess
 
-    # arguments are files 
+    # arguments are files
     let multiFiles = args.len > 1
     for arg in args:
       if multiFiles:
         styledWriteLine stderr, styleBright, &"\n{arg}:"
       try:
-        writeJwtFile arg
+        writeJwtFile arg, isRaw
       except:
         if not multiFiles:
           quit QuitFailure
@@ -179,6 +206,6 @@ proc main* =
     printField "  --version (-v)", ": to display the version"
     echo()
     writeHelp()
-  
+
 when isMainModule:
   main()

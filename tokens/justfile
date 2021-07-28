@@ -1,0 +1,35 @@
+SECRET := `openssl rand -hex 32`
+CLAIMS := '{ "sub": "0123456789", "name": "Clint Eastwood", "role": "user", "aud": "www.example.com" }'
+
+# Default recipe (this list)
+default:
+	@just --list
+
+# Generate RAS keys
+key:
+	-mkdir out
+	ssh-keygen -t rsa -b 4096 -m PEM -f out/RS256.key
+	openssl rsa -in out/RS256.key -pubout -outform PEM -out out/RS256.key.pub
+
+check_key:
+	#!/usr/bin/env python3
+	import os, sys
+	if not os.path.exists("out/RS256.key"):
+		raise SystemExit("You need to execute: 'just key' before executing 'just gen'")
+
+# Generate tokens
+gen: check_key
+	npx jwtgen -a HS256 -s {{SECRET}} --claims '{{CLAIMS}}' -e 3600 > out/HS256.token
+	npx jwtgen -a HS384 -s {{SECRET}} --claims '{{CLAIMS}}' -e 3600 > out/HS384.token
+	npx jwtgen -a HS512 -s {{SECRET}} --claims '{{CLAIMS}}' -e 3600 > out/HS512.token
+	npx jwtgen -a RS256 -p out/RS256.key --claims '{{CLAIMS}}' -e 3600 > out/RS256.token
+
+# Remove generated files
+clean:
+	rm -rf out
+
+# Execute the debug version of jwt against the generated token
+test:
+	../bin/debug/jwt -x out/*.token
+	../bin/debug/jwt -x other/*.token | jq
+	../bin/debug/jwt -x broken/*.token
