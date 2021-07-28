@@ -5,12 +5,13 @@ CLAIMS := '{ "sub": "0123456789", "name": "Clint Eastwood", "role": "user", "aud
 default:
 	@just --list
 
-# Generate RAS keys
+# Generate RSA keys
 key:
 	-mkdir out
 	ssh-keygen -t rsa -b 4096 -m PEM -f out/RS256.key
 	openssl rsa -in out/RS256.key -pubout -outform PEM -out out/RS256.key.pub
 
+# Check if out directory and RSA keys exist
 check_key:
 	#!/usr/bin/env python3
 	import os, sys
