@@ -10,13 +10,14 @@ license = "MIT"
 srcDir = "src"
 bin = @["jwt"]
 
+let app = "jwt"
 let distDir = "dist"
 let testsDir = "tests"
 let relDir = "bin/release"
 let buildDir = "bin/debug"
 
 # Dependencies
-requires "nim >= 1.4.8"
+requires "nim >= 2.0.0"
 
 # Tasks
 task test, "Run the test suite":
@@ -27,22 +28,47 @@ task dev, "Build for development":
 
 task release, "Build for prod":
     exec "nimble test"
-    exec "nimble clean"
+    exec "nimble cleanUp"
     exec "nimble fmt"
-    exec &"nim c --d:release --opt:size -o:{relDir}/jwt {srcDir}/jwt.nim"
-    exec &"strip {relDir}/jwt"
-    exec &"upx {relDir}/jwt"
+    exec &"nim c --d:release --opt:size -o:{relDir}/jwt {srcDir}/{app}.nim"
+    exec &"strip {relDir}/{app}"
+    when defined linux:
+        exec &"upx {relDir}/{app}"
 
-task clean, "Delete generated files":
+task cleanUp, "Delete generated files":
     exec "rm -rf bin dist"
 
 task dist, "Create distribution":
     exec "nimble release"
-    if not existsDir distDir:
+
+    var osName = ""
+    var archName = ""
+
+    if not exists distDir:
         mkDir distDir
-    withDir relDir:
-        exec &"zip jwt_{version}_macosx.zip jwt"
-    mvFile &"{relDir}/jwt_{version}_macosx.zip", &"{distDir}/jwt_{version}_macosx.zip"
+
+    when defined windows:
+        osName = "windows"
+    elif defined linux:
+        osName = "linux"
+    elif defined osx:
+        osName = "osx"
+    else:
+        echo "unexpected os"
+        quit QuitFailure
+
+    when defined amd64:
+        archName = "amd64"
+    elif defined arm64:
+        archName = "arm64"
+    else:
+        echo "unexpected architecture"
+        quit QuitFailure
+
+    let packageName = &"{app}_{version}_{osName}_{archName}"
+
+    exec &"zip -j {packageName}.zip {relDir}/jwt LICENSE README.md"
+    mvFile &"{packageName}.zip", &"{distDir}/{packageName}.zip"
 
 task fmt, "Format Nim source files (https://nim-lang.org/docs/nep1.html)":
     exec "nimpretty jwt.nimble src/*.nim src/jwt/*.nim"
