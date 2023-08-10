@@ -32,8 +32,6 @@ task release, "Build for prod":
     exec "nimble fmt"
     exec &"nim c --d:release --opt:size -o:{relDir}/jwt {srcDir}/{app}.nim"
     exec &"strip {relDir}/{app}"
-    when defined linux:
-        exec &"upx {relDir}/{app}"
 
 task cleanUp, "Delete generated files":
     exec "rm -rf bin dist"
