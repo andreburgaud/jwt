@@ -67,7 +67,7 @@ proc writeHelp =
   echo()
   printInfo "Options:"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
-  printField "  -r | --raw     ", ": keep the dates (iat, exp) as a numeric values (epoch time)"
+  printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
   echo()
 
 proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
