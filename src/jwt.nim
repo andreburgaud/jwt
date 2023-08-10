@@ -3,7 +3,7 @@ import jwt/common
 
 const
   NAME = "JWT Command Line"
-  COPYRIGHT = "Copyright (c) 2021 - Andre Burgaud"
+  COPYRIGHT = "Copyright (c) 2021-2023 - Andre Burgaud"
   LICENSE = "MIT License"
 
 type JwtException* = object of ValueError
