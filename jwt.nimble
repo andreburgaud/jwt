@@ -2,7 +2,6 @@ import strformat
 import src/jwt/common
 
 # Package
-
 version = VERSION
 author = "Andre"
 description = "JWT Command Line"
@@ -31,10 +30,13 @@ task release, "Build for prod":
     exec "nimble cleanUp"
     exec "nimble fmt"
     exec &"nim c --d:release --opt:size -o:{relDir}/jwt {srcDir}/{app}.nim"
-    exec &"strip {relDir}/{app}"
+
+    when not defined windows:
+        exec &"strip {relDir}/{app}"
 
 task cleanUp, "Delete generated files":
-    exec "rm -rf bin dist"
+    rmDir "bin"
+    rmDir "dist"
 
 task dist, "Create distribution":
     exec "nimble release"
@@ -65,11 +67,14 @@ task dist, "Create distribution":
 
     let packageName = &"{app}_{version}_{osName}_{archName}"
 
-    exec &"zip -j {packageName}.zip {relDir}/jwt LICENSE README.md"
-    mvFile &"{packageName}.zip", &"{distDir}/{packageName}.zip"
+    if defined windows:
+        exec &"pwsh -Command Get-ChildItem -Path {relDir}/jwt.exe, LICENSE, README.md | Compress-Archive -Destination {distDir}/{packageName}.zip"
+    else:
+        exec &"zip -j {packageName}.zip {relDir}/jwt LICENSE README.md"
+        mvFile &"{packageName}.zip", &"{distDir}/{packageName}.zip"
 
 task fmt, "Format Nim source files (https://nim-lang.org/docs/nep1.html)":
-    exec "nimpretty jwt.nimble src/*.nim src/jwt/*.nim"
+    exec "nimpretty jwt.nimble src/jwt.nim src/jwt/common.nim"
 
 task tag, "Push the commits to repo and generate a new tag":
     exec "git push"

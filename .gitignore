@@ -2,5 +2,6 @@
 bin/
 dist/
 tests/tester
+tests/tester.exe
 tests/tester.dSYM
 tokens/out
