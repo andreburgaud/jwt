@@ -54,14 +54,11 @@ proc writeHelp =
   echo()
 
   printInfo "Usage:"
-  printField &"  {app}", " --decode <jwt_file>"
-  printField &"  {app}", " -d <jwt_file>"
-  printField &"  {app}", " --decode --string <jwt_string>"
-  printField &"  {app}", " -d -s=<jwt_string>"
-  printField &"  {app}", " --decode --raw --string <jwt_string>"
-  printField &"  {app}", " -d -r -s=<jwt_string>"
-  printField &"  {app}", " -v | --version"
-  printField &"  {app}", " -h | --help"
+  printField &"  {app}", " --decode <jwt_file>                  | -d <jwt_file>"
+  printField &"  {app}", " --decode --string <jwt_string>       | -d -s=<jwt_string>"
+  printField &"  {app}", " --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>"
+  printField &"  {app}", " --version                            | -v"
+  printField &"  {app}", " --help                               | -h"
   echo()
   printInfo "Commands:"
   printField "  -h | --help    ", ": show this screen"
@@ -69,9 +66,6 @@ proc writeHelp =
   printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
   echo()
   printInfo "Options:"
-  printField "  -h | --help    ", ": show this screen"
-  printField "  -v | --version ", ": show version"
-  printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
   printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
   echo()
