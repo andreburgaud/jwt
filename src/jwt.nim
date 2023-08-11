@@ -45,10 +45,10 @@ proc writeHelp =
   let app = appName()
   echo()
   printInfo "Description:"
-  echo "  Parses an encoded JSON Web Token (JWT) and decode the "
+  echo "  Parses an encoded JSON Web Token (JWT) and decode the"
   echo "  JWT Header and Payload into a valid JSON content."
-  echo "  Converts dates (iat, exp) into human readable format unless "
-  echo "  the option '--raw' is passed at the command line."
+  echo "  Converts dates (iat, exp) into human readable format"
+  echo "  unless the option '--raw' is passed at the command line."
   echo()
   echo "  The JWT token can be passed via standard input, a file or a string."
   echo()
