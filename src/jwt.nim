@@ -45,27 +45,33 @@ proc writeHelp =
   let app = appName()
   echo()
   printInfo "Description:"
-  echo "  Parses an encoded JSON Web Token (JWT) and extracts the "
+  echo "  Parses an encoded JSON Web Token (JWT) and decode the "
   echo "  JWT Header and Payload into a valid JSON content."
   echo "  Converts dates (iat, exp) into human readable format unless "
   echo "  the option '--raw' is passed at the command line."
   echo()
+  echo "  The JWT token can be passed via standard input, a file or a string."
+  echo()
+
   printInfo "Usage:"
-  printField &"  {app}", " --extract <jwt_file>"
-  printField &"  {app}", " -x <jwt_file>"
-  printField &"  {app}", " --extract --string <jwt_string>"
-  printField &"  {app}", " -x -s<jwt_string>"
-  printField &"  {app}", " --extract --raw --string <jwt_string>"
-  printField &"  {app}", " -x -r -s<jwt_string>"
+  printField &"  {app}", " --decode <jwt_file>"
+  printField &"  {app}", " -d <jwt_file>"
+  printField &"  {app}", " --decode --string <jwt_string>"
+  printField &"  {app}", " -d -s=<jwt_string>"
+  printField &"  {app}", " --decode --raw --string <jwt_string>"
+  printField &"  {app}", " -d -r -s=<jwt_string>"
   printField &"  {app}", " -v | --version"
   printField &"  {app}", " -h | --help"
   echo()
   printInfo "Commands:"
-  printField "  -x | --extract ", ": extract JWT token into a valid JSON string"
   printField "  -h | --help    ", ": show this screen"
   printField "  -v | --version ", ": show version"
+  printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
   echo()
   printInfo "Options:"
+  printField "  -h | --help    ", ": show this screen"
+  printField "  -v | --version ", ": show version"
+  printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
   printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
   echo()
@@ -83,18 +89,21 @@ proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
   (fields[0], fields[1], fields[2])
 
 proc extractJwtStr*(data: string): string =
-  ## Extracts the 2 first parts of the JWT and base64-decodes them before
-  ## concatenating them into a valid JSON payload: a list of 2 objects
-  ## with the first object containing the JWT header and the second object
-  ## representing the JWT payload. For example:
+  ## Extracts the 3 sections of the JWT and base64-decodes them before
+  ## concatenating them into a valid JSON payload: a list of 3 objects
+  ## with the first object containing the JWT header, the second object
+  ## representing the JWT payload and the third object, the signature.
+  ## For example:
   ## .. code-block:: json
-  ##   [{"alg":"HS256","typ":"JWT"},{"sub":"1234567890","name":"John Doe","iat":1516239022}]
-  ##
+  ##   [{"alg":"HS256","typ":"JWT"},
+  ##    {"sub":"1234567890","name":"John Doe","iat":1516239022},
+  ##    {"sig":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}]
 
-  let (header, payload, _) = splitJwt data
+  let (header, payload, sig) = splitJwt data
   let jsonHeader = decode header
   let jsonPayload = decode payload
-  &"[{jsonHeader},{jsonPayload}]"
+  let jsonSig = fmt"""{{"sig":"{sig}"}}"""
+  &"[{jsonHeader},{jsonPayload},{jsonSig}]"
 
 proc convertTime(intNode: JsonNode): JsonNode =
   ## Convert time from a JsonNode (epoch time) to a formatted time as JSON Date
@@ -142,7 +151,7 @@ proc main* =
   ## extracted from the command line.
 
   # Commands / Options
-  var cmdExtract = false
+  var cmdDecode = false
   var isRaw = false
 
   # Arguments
@@ -152,8 +161,8 @@ proc main* =
   var jwtStr: string
 
   var errorOption = false
-  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'x'},
-                               longNoVal = @["help", "version", "extract"]):
+  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'd'},
+                               longNoVal = @["help", "version", "decode"]):
     case kind
     of cmdEnd: break
     of cmdArgument:
@@ -163,15 +172,15 @@ proc main* =
       of "help", "h": writeHelp(); return
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
-      of "extract", "x": cmdExtract = true
+      of "decode", "d": cmdDecode = true
       of "raw", "r": isRaw = true
       else: printError &"unexpected option '{key}'"; errorOption = true
 
   if errorOption:
     quit QuitFailure
 
-  # Extract (option -x | --extract)
-  if cmdExtract:
+  # Decode (option -d | --decode)
+  if cmdDecode:
 
     if jwtStr.len == 0 and args.len == 0: # stdin
       jwtStr = stdin.readAll()
@@ -201,7 +210,7 @@ proc main* =
 
   else:
     printError "No command were given. Existing commands are: "
-    printField "  --extract (-x)", ": to extract a JWT Header and Payload"
+    printField "  --decode (-d)", ": to decode a JWT Header and Payload"
     printField "  --help (-h)   ", ": to display the usage"
     printField "  --version (-v)", ": to display the version"
     echo()
