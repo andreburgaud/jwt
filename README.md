@@ -1,13 +1,13 @@
 # JSON Web Token (JWT)
 
-The initial version of this tool takes a command **extract**, `--extract` or `-x`, and a [JSON Web Token](https://jwt.io/) (JWT), either as a string with option `--string`, or as one or multiple files passed as arguments, then prints the content of the header and payload to the output in valid JSON format.
+The initial version of this tool takes a command **decode**, `--decode` or `-d`, and a [JSON Web Token](https://jwt.io/) (JWT), either as a string with option `--string`, or as one or multiple files passed as arguments, then prints the content of the header and payload to the output in valid JSON format.
 
 ## Usage Examples
 
 ### JWT File
 
 ```
-$ jwt --extract tokens/hs256.token
+jwt --decode tokens/hs256.token
 ```
 ```json
 [
@@ -26,7 +26,7 @@ $ jwt --extract tokens/hs256.token
 ### JWT String
 
 ```
-$ jwt --extract --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+jwt --decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
 ```
 ```json
 [
@@ -45,7 +45,7 @@ $ jwt --extract --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NT
 ### Piping with jq
 
 ```
-$ jwt --extract tokens/hs256.token | jq
+jwt --decode tokens/hs256.token | jq
 ```
 ```json
 [
@@ -66,7 +66,7 @@ The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of t
 ### From stdin
 
 ```
-$ cat tokens/hs256.token | jwt -x | jq
+cat tokens/hs256.token | jwt -d | jq
 ```
 ```json
 [
@@ -85,31 +85,36 @@ $ cat tokens/hs256.token | jwt -x | jq
 ### Help
 
 ```
-$ jwt
-                    JWT Command Line 0.2.0
-              Copyright (c) 2021 - Andre Burgaud
-                         MIT License
+jwt
+```
+```
+                              JWT Command Line 0.4.0
+                      Copyright (c) 2021-2023 - Andre Burgaud
+                                    MIT License
 
 Description:
-  Parses an encoded JSON Web Token (JWT)
-  and extracts the JWT Header and Payload
-  into a valid JSON content.
+  Parses an encoded JSON Web Token (JWT) and decode the
+  JWT Header and Payload into a valid JSON content.
+  Converts dates (iat, exp) into human readable format
+  unless the option '--raw' is passed at the command line.
+
+  The JWT token can be passed via standard input, a file or a string.
 
 Usage:
-  jwt --extract <jwt_file>
-  jwt -x <jwt_file>
-  jwt --extract --string <jwt_string>
-  jwt -x -s<jwt_string>
-  jwt -v | --version
-  jwt -h | --help
+  jwt --decode <jwt_file>                  | -d <jwt_file>
+  jwt --decode --string <jwt_string>       | -d -s=<jwt_string>
+  jwt --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>
+  jwt --version                            | -v
+  jwt --help                               | -h
 
 Commands:
-  -x | --extract : extract JWT token into a valid JSON string
   -h | --help    : show this screen
   -v | --version : show version
+  -d | --decode  : decode JWT token into a valid JSON string
 
 Options:
   -s | --string  : take a JWT token string as argument instead of file
+  -r | --raw     : keep the dates (iat, exp) as numeric values (epoch time)
 ```
 
 ## TODO
@@ -128,25 +133,25 @@ Options:
 ### Build
 
 ```
-$ nimble dev
+nimble dev
 ```
 
 ### Test
 
 ```
-$ nimble test
+nimble test
 ```
 
 ### Release
 
 ```
-$ nimble release
+nimble release
 ```
 
 ### Dist
 
 ```
-$ nimble dist
+nimble dist
 ```
 
 ## Resources

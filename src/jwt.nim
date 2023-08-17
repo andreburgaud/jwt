@@ -204,9 +204,9 @@ proc main* =
 
   else:
     printError "No command were given. Existing commands are: "
-    printField "  --decode (-d)", ": to decode a JWT Header and Payload"
-    printField "  --help (-h)   ", ": to display the usage"
-    printField "  --version (-v)", ": to display the version"
+    printField "  -d | --decode  ", ": to decode a JWT Header and Payload"
+    printField "  -h | --help    ", ": to display the usage"
+    printField "  -v | --version ", ": to display the version"
     echo()
     writeHelp()
 
