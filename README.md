@@ -88,7 +88,7 @@ cat tokens/hs256.token | jwt -d | jq
 jwt
 ```
 ```
-                              JWT Command Line 0.4.0
+                              JWT Command Line 0.5.0
                       Copyright (c) 2021-2023 - Andre Burgaud
                                     MIT License
 
@@ -102,6 +102,7 @@ Description:
 
 Usage:
   jwt --decode <jwt_file>                  | -d <jwt_file>
+  jwt --decode --flatten <jwt_file>        | -d -f <jwt_file>
   jwt --decode --string <jwt_string>       | -d -s=<jwt_string>
   jwt --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>
   jwt --version                            | -v
@@ -114,6 +115,7 @@ Commands:
 
 Options:
   -s | --string  : take a JWT token string as argument instead of file
+  -f | --flatten : render a JSON representation of the token with raw data for each field
   -r | --raw     : keep the dates (iat, exp) as numeric values (epoch time)
 ```
 
