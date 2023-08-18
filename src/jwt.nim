@@ -55,6 +55,7 @@ proc writeHelp =
 
   printInfo "Usage:"
   printField &"  {app}", " --decode <jwt_file>                  | -d <jwt_file>"
+  printField &"  {app}", " --decode --flatten <jwt_file>        | -d -f <jwt_file>"
   printField &"  {app}", " --decode --string <jwt_string>       | -d -s=<jwt_string>"
   printField &"  {app}", " --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>"
   printField &"  {app}", " --version                            | -v"
@@ -67,6 +68,7 @@ proc writeHelp =
   echo()
   printInfo "Options:"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
+  printField "  -f | --flatten ", ": render a JSON representation of the token with raw data for each field"
   printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
   echo()
 
@@ -82,7 +84,7 @@ proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
     raise newException(JwtException, msg)
   (fields[0], fields[1], fields[2])
 
-proc extractJwtStr*(data: string): string =
+proc decodeJwtStr*(data: string): string =
   ## Extracts the 3 sections of the JWT and base64-decodes them before
   ## concatenating them into a valid JSON payload: a list of 3 objects
   ## with the first object containing the JWT header, the second object
@@ -91,13 +93,26 @@ proc extractJwtStr*(data: string): string =
   ## .. code-block:: json
   ##   [{"alg":"HS256","typ":"JWT"},
   ##    {"sub":"1234567890","name":"John Doe","iat":1516239022},
-  ##    {"sig":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}]
+  ##    {"signature":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}]
 
-  let (header, payload, sig) = splitJwt data
+  let (header, payload, signature) = splitJwt data
   let jsonHeader = decode header
   let jsonPayload = decode payload
-  let jsonSig = fmt"""{{"sig":"{sig}"}}"""
-  &"[{jsonHeader},{jsonPayload},{jsonSig}]"
+  &"""[{jsonHeader},{jsonPayload},{{"signature":"{signature}"}}]"""
+
+proc flattenJwtStr*(data: string): string =
+  ## Extracts the 3 sections of the JWT and concatenating them into a valid
+  ## JSON payload: a object with 3 properties, with the first property
+  ## containing the encoded JWT header, the second property
+  ## representing the JWT payload and the third property, the signature.
+  ## For example:
+  ## .. code-block:: json
+  ## {"header": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+  ##  "payload": "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ",
+  ##  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}]
+
+  let (header, payload, signature) = splitJwt data
+  &"""{{"header":"{header}","payload":"{payload}","signature":"{signature}"}}"""
 
 proc convertTime(intNode: JsonNode): JsonNode =
   ## Convert time from a JsonNode (epoch time) to a formatted time as JSON Date
@@ -105,11 +120,27 @@ proc convertTime(intNode: JsonNode): JsonNode =
   let dt = format(initTime(value, 0), "yyyy-MM-dd'T'HH:mm:sszzz")
   return %dt
 
+proc writeFlatJwtStr(data: string) =
+  ## Write a flatten Jwt
+
+  var jsonData: JsonNode
+  let jsonStr = flattenJwtStr data
+
+  try:
+    jsonData = parseJson(jsonStr)
+  except JsonParsingError:
+    printError &"invalid JWT (encoded: '{data}')"
+    printError &"invalid JWT (decoded: '{jsonStr}')"
+    raise
+
+  echo pretty jsonData
+
+
 proc writeJwtStr(data: string, raw: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string
 
   var jsonData: JsonNode
-  let jsonStr = extractJwtStr data
+  let jsonStr = decodeJwtStr data
 
   try:
     jsonData = parseJson(jsonStr)
@@ -130,14 +161,17 @@ proc writeJwtStr(data: string, raw: bool) =
       jsonData[1]["iat"] = convertTime(jsonData[1]["iat"])
     echo pretty jsonData
 
-proc writeJwtFile(file: string, raw: bool) =
+proc writeJwtFile(file: string, flat: bool, raw: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file
 
   if not os.fileExists(file):
     printError &"file {file} does not exist"
     return
   let data = readFile file
-  writeJwtStr data.strip(), raw
+  if flat:
+    writeFlatJwtStr data.strip()
+  else:
+    writeJwtStr data.strip(), raw
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
@@ -147,6 +181,7 @@ proc main* =
   # Commands / Options
   var cmdDecode = false
   var isRaw = false
+  var isFlat = false
 
   # Arguments
   var args: seq[string] = @[]
@@ -167,6 +202,7 @@ proc main* =
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
       of "decode", "d": cmdDecode = true
+      of "flatten", "f": isFlat = true
       of "raw", "r": isRaw = true
       else: printError &"unexpected option '{key}'"; errorOption = true
 
@@ -197,7 +233,7 @@ proc main* =
       if multiFiles:
         styledWriteLine stderr, styleBright, &"\n{arg}:"
       try:
-        writeJwtFile arg, isRaw
+        writeJwtFile arg, isFlat, isRaw
       except:
         if not multiFiles:
           quit QuitFailure
