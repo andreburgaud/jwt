@@ -21,7 +21,8 @@ jwt --decode tokens/hs256.token
     "iat": "2018-01-17T19:30:22-06:00"
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-}```
+}
+```
 
 ### JWT String
 
@@ -40,7 +41,8 @@ jwt --decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3O
     "iat": "2018-01-17T19:30:22-06:00"
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-}```
+}
+```
 
 ### Piping with jq
 
