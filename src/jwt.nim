@@ -98,7 +98,8 @@ proc decodeJwtStr*(data: string): string =
   let (header, payload, signature) = splitJwt data
   let jsonHeader = decode header
   let jsonPayload = decode payload
-  &"""[{jsonHeader},{jsonPayload},{{"signature":"{signature}"}}]"""
+  #&"""[{jsonHeader},{jsonPayload},{{"signature":"{signature}"}}]"""
+  &"""{{"header":{jsonHeader},"payload":{jsonPayload},"signature":"{signature}"}}"""
 
 proc flattenJwtStr*(data: string): string =
   ## Extracts the 3 sections of the JWT and concatenating them into a valid
@@ -115,7 +116,7 @@ proc flattenJwtStr*(data: string): string =
   &"""{{"header":"{header}","payload":"{payload}","signature":"{signature}"}}"""
 
 proc convertTime(intNode: JsonNode): JsonNode =
-  ## Convert time from a JsonNode (epoch time) to a formatted time as JSON Date
+  ## Convert time from a JsonNode (epoch time) to a UTC formatted time as JSON Date
   let value = getInt(intNode).int64
   let dt = format(initTime(value, 0), "yyyy-MM-dd'T'HH:mm:sszzz")
   return %dt
@@ -155,10 +156,11 @@ proc writeJwtStr(data: string, raw: bool) =
   else:
     # converts dates into human readable dates
     # For example 1627425118 is converted to "2021-07-27T17:31:58-05:00"
-    if jsonData[1].hasKey("exp"):
-      jsonData[1]["exp"] = convertTime(jsonData[1]["exp"])
-    if jsonData[1].hasKey("iat"):
-      jsonData[1]["iat"] = convertTime(jsonData[1]["iat"])
+    let payloadNode = jsonData["payload"]
+    if payloadNode.hasKey("exp"):
+      payloadNode["exp"] = convertTime(payloadNode["exp"])
+    if payloadNode.hasKey("iat"):
+      payloadNode["iat"] = convertTime(payloadNode["iat"])
     echo pretty jsonData
 
 proc writeJwtFile(file: string, flat: bool, raw: bool) =
