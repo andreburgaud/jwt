@@ -64,7 +64,11 @@ jwt --decode tokens/hs256.token | jq
 }
 ```
 
-The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data.
+The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data. On Windows, add option `-C` (colorize JSON) to the `jq` command, as follows:
+
+```
+jwt -d tokens\hs256.token | jq -C
+```
 
 ### From stdin
 
