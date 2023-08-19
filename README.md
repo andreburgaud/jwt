@@ -10,18 +10,18 @@ The initial version of this tool takes a command **decode**, `--decode` or `-d`,
 jwt --decode tokens/hs256.token
 ```
 ```json
-[
-  {
+{
+  "header": {
     "alg": "HS256",
     "typ": "JWT"
   },
-  {
+  "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": 1516239022
-  }
-]
-```
+    "iat": "2018-01-17T19:30:22-06:00"
+  },
+  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}```
 
 ### JWT String
 
@@ -29,18 +29,18 @@ jwt --decode tokens/hs256.token
 jwt --decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
 ```
 ```json
-[
-  {
+{
+  "header": {
     "alg": "HS256",
     "typ": "JWT"
   },
-  {
+  "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": 1516239022
-  }
-]
-```
+    "iat": "2018-01-17T19:30:22-06:00"
+  },
+  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}```
 
 ### Piping with jq
 
@@ -48,17 +48,18 @@ jwt --decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3O
 jwt --decode tokens/hs256.token | jq
 ```
 ```json
-[
-  {
+{
+  "header": {
     "alg": "HS256",
     "typ": "JWT"
   },
-  {
+  "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": 1516239022
-  }
-]
+    "iat": "2018-01-17T19:30:22-06:00"
+  },
+  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}
 ```
 
 The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data.
@@ -69,23 +70,24 @@ The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of t
 cat tokens/hs256.token | jwt -d | jq
 ```
 ```json
-[
-  {
+{
+  "header": {
     "alg": "HS256",
     "typ": "JWT"
   },
-  {
+  "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": 1516239022
-  }
-]
+    "iat": "2018-01-17T19:30:22-06:00"
+  },
+  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+}
 ```
 
 ### Help
 
 ```
-jwt
+jwt --help
 ```
 ```
                               JWT Command Line 0.5.0

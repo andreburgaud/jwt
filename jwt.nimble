@@ -22,19 +22,22 @@ requires "nim >= 2.0.0"
 task test, "Run the test suite":
     exec &"nim c -r {testsDir}/tester"
 
-task dev, "Build for development":
+task debug, "Build for development":
     exec &"nim c --colors:on -o:{buildDir}/jwt {srcDir}/jwt.nim"
 
 task release, "Build for prod":
     exec "nimble test"
-    exec "nimble cleanUp"
+    exec "nimble cleanup"
     exec "nimble fmt"
     exec &"nim c --d:release --opt:size -o:{relDir}/jwt {srcDir}/{app}.nim"
 
     when not defined windows:
         exec &"strip {relDir}/{app}"
 
-task cleanUp, "Delete generated files":
+task clean, "Ignore":
+    echo "Use cleanup instead"
+
+task cleanup, "Delete generated files":
     rmDir "bin"
     rmDir "dist"
 
