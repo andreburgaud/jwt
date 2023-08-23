@@ -37,7 +37,7 @@ proc writeInfo =
 
 proc writeVersion =
   ## Write the app version
-  printSuccess &"{appName()} version {VERSION}"
+  printSuccess &"{appName()} {VERSION}"
 
 proc writeHelp =
   ## Displays the help (usage) for the command line tool
