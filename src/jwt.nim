@@ -31,13 +31,13 @@ proc printField(key: string, value: string) =
 proc writeInfo =
   ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
-  styledEcho fgGreen, center(&"{NAME} {VERSION}", width - 10)
+  styledEcho fgGreen, center(&"{NAME} {VERSION}{SUFFIX}", width - 10)
   styledEcho fgGreen, center(COPYRIGHT, width - 10)
   styledEcho fgGreen, center(LICENSE, width - 10)
 
 proc writeVersion =
   ## Write the app version
-  printSuccess &"{appName()} {VERSION}"
+  printSuccess &"{appName()} {VERSION}{SUFFIX}"
 
 proc writeHelp =
   ## Displays the help (usage) for the command line tool
