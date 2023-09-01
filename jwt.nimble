@@ -17,6 +17,7 @@ let buildDir = "bin/debug"
 
 # Dependencies
 requires "nim >= 2.0.0"
+requires "nimcrypto"
 
 # Tasks
 task test, "Run the test suite":

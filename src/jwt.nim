@@ -1,10 +1,12 @@
 import base64, json, os, parseopt, strformat, strutils, terminal, times
+import nimcrypto
 import jwt/common
 
 const
   NAME = "JWT Command Line"
   COPYRIGHT = "Copyright (c) 2021-2023 - Andre Burgaud"
   LICENSE = "MIT License"
+  KEY = "test_key"
 
 type JwtException* = object of ValueError
 
@@ -58,6 +60,7 @@ proc writeHelp =
   printField &"  {app}", " --decode --flatten <jwt_file>        | -d -f <jwt_file>"
   printField &"  {app}", " --decode --string <jwt_string>       | -d -s=<jwt_string>"
   printField &"  {app}", " --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>"
+  printField &"  {app}", " --encode --string <jwt_string>       | -e -s=<jwt_string>"
   printField &"  {app}", " --version                            | -v"
   printField &"  {app}", " --help                               | -h"
   echo()
@@ -65,6 +68,7 @@ proc writeHelp =
   printField "  -h | --help    ", ": show this screen"
   printField "  -v | --version ", ": show version"
   printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
+  printField "  -e | --encode  ", ": encode a JWT Header and Payload"
   echo()
   printInfo "Options:"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
@@ -98,8 +102,22 @@ proc decodeJwtStr*(data: string): string =
   let (header, payload, signature) = splitJwt data
   let jsonHeader = decode header
   let jsonPayload = decode payload
-  #&"""[{jsonHeader},{jsonPayload},{{"signature":"{signature}"}}]"""
   &"""{{"header":{jsonHeader},"payload":{jsonPayload},"signature":"{signature}"}}"""
+
+proc encodeJwtStr*(data: string): string =
+  ## test: {"header": {"alg": "HS256","typ": "JWT"},"payload": {"sub": "1234567890","name": "John Doe","iat": 1516239022}}
+
+  let jsonNode = parseJson(data)
+
+  let encodedHeader = encode($(jsonNode["header"]), safe=true).strip(leading=false, trailing=true, chars={'='})
+  let encodedPayload = encode($(jsonNode["payload"]), safe=true).strip(leading=false, trailing=true, chars={'='})
+
+  let toHash = &"""{encodedHeader}.{encodedPayload}"""
+
+  let signature = sha256.hmac(KEY, toHash)
+  let encodedSignature = encode(signature.data, safe=true).strip(leading=false, trailing=true, chars={'='})
+
+  &"""{toHash}.{encodedSignature}"""
 
 proc flattenJwtStr*(data: string): string =
   ## Extracts the 3 sections of the JWT and concatenating them into a valid
@@ -181,6 +199,7 @@ proc main* =
   ## extracted from the command line.
 
   # Commands / Options
+  var cmdEncode = false
   var cmdDecode = false
   var isRaw = false
   var isFlat = false
@@ -192,8 +211,8 @@ proc main* =
   var jwtStr: string
 
   var errorOption = false
-  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'd'},
-                               longNoVal = @["help", "version", "decode"]):
+  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'd', 'e'},
+                               longNoVal = @["help", "version", "decode", "encode"]):
     case kind
     of cmdEnd: break
     of cmdArgument:
@@ -204,6 +223,7 @@ proc main* =
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
       of "decode", "d": cmdDecode = true
+      of "encode", "e": cmdEncode = true
       of "flatten", "f": isFlat = true
       of "raw", "r": isRaw = true
       else: printError &"unexpected option '{key}'"; errorOption = true
@@ -240,9 +260,38 @@ proc main* =
         if not multiFiles:
           quit QuitFailure
 
+  elif cmdEncode:
+    if jwtStr.len == 0 and args.len == 0: # stdin
+      jwtStr = stdin.readAll()
+      echo()
+      if jwtStr.len == 0:
+        printError "JWT cannot be empty"
+        quit QuitFailure
+
+    if jwtStr.len > 0: # argument is a string
+      try:
+        echo encodeJwtStr(jwtStr.strip())
+      except JwtException:
+        quit QuitFailure
+      finally:
+        quit QuitSuccess
+
+    # arguments are files
+    let multiFiles = args.len > 1
+    for arg in args:
+      if multiFiles:
+        styledWriteLine stderr, styleBright, &"\n{arg}:"
+      try:
+        writeJwtFile arg, isFlat, isRaw
+      except:
+        if not multiFiles:
+          quit QuitFailure
+
+
   else:
     printError "No command were given. Existing commands are: "
     printField "  -d | --decode  ", ": to decode a JWT Header and Payload"
+    printField "  -e | --encode  ", ": to encode a JWT Header and Payload"
     printField "  -h | --help    ", ": to display the usage"
     printField "  -v | --version ", ": to display the version"
     echo()
