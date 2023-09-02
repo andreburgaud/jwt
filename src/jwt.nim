@@ -6,7 +6,6 @@ const
   NAME = "JWT Command Line"
   COPYRIGHT = "Copyright (c) 2021-2023 - Andre Burgaud"
   LICENSE = "MIT License"
-  KEY = "test_key"
 
 type JwtException* = object of ValueError
 
@@ -60,7 +59,7 @@ proc writeHelp =
   printField &"  {app}", " --decode --flatten <jwt_file>        | -d -f <jwt_file>"
   printField &"  {app}", " --decode --string <jwt_string>       | -d -s=<jwt_string>"
   printField &"  {app}", " --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>"
-  printField &"  {app}", " --encode --string <jwt_string>       | -e -s=<jwt_string>"
+  printField &"  {app}", " --encode --string <jwt_string>       | -e k=<key> -s=<jwt_string>"
   printField &"  {app}", " --version                            | -v"
   printField &"  {app}", " --help                               | -h"
   echo()
@@ -68,9 +67,10 @@ proc writeHelp =
   printField "  -h | --help    ", ": show this screen"
   printField "  -v | --version ", ": show version"
   printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
-  printField "  -e | --encode  ", ": encode a JWT Header and Payload"
+  printField "  -e | --encode  ", ": encode a JWT Header and Payload (option key is required)"
   echo()
   printInfo "Options:"
+  printField "  -k | --key     ", ": take a secret key string as argument (required with command 'encode')"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
   printField "  -f | --flatten ", ": render a JSON representation of the token with raw data for each field"
   printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
@@ -104,20 +104,48 @@ proc decodeJwtStr*(data: string): string =
   let jsonPayload = decode payload
   &"""{{"header":{jsonHeader},"payload":{jsonPayload},"signature":"{signature}"}}"""
 
-proc encodeJwtStr*(data: string): string =
-  ## test: {"header": {"alg": "HS256","typ": "JWT"},"payload": {"sub": "1234567890","name": "John Doe","iat": 1516239022}}
+proc encodeUrlSafe[T: byte | char](data: openArray[T]): string =
+  ## b64 encode with URL safe and strip the trailing '=' signs
+  encode(data, safe = true).strip(leading = false, trailing = true, chars = {'='})
 
-  let jsonNode = parseJson(data)
+proc encodeJwtStr*(data: string, key: string) =
+  ## Encode a JWT token using the HS256 algorithm and the key
 
-  let encodedHeader = encode($(jsonNode["header"]), safe=true).strip(leading=false, trailing=true, chars={'='})
-  let encodedPayload = encode($(jsonNode["payload"]), safe=true).strip(leading=false, trailing=true, chars={'='})
+  var jsonNode: JsonNode
+
+  try:
+    jsonNode = parseJson(data)
+  except JsonParsingError:
+    raise newException(JwtException, &"invalid JWT: '{data}'")
+
+  ## TODO: validate HS256
+  let algo = jsonNode["header"]["alg"].getStr
+
+  let encodedHeader = encodeUrlSafe($(jsonNode["header"]))
+  let encodedPayload = encodeUrlSafe($(jsonNode["payload"]))
 
   let toHash = &"""{encodedHeader}.{encodedPayload}"""
 
-  let signature = sha256.hmac(KEY, toHash)
-  let encodedSignature = encode(signature.data, safe=true).strip(leading=false, trailing=true, chars={'='})
+  var encodedSignature: string
 
-  &"""{toHash}.{encodedSignature}"""
+  case algo:
+    of "HS256":
+      encodedSignature = encodeUrlSafe(sha256.hmac(key, toHash).data)
+    of "HS384":
+      encodedSignature = encodeUrlSafe(sha384.hmac(key, toHash).data)
+    of "HS512":
+      encodedSignature = encodeUrlSafe(sha512.hmac(key, toHash).data)
+    else:
+      raise newException(JwtException, &"Found algorithm '{algo}' (only 'HS256', 'HS384' and 'HS512' are supported for now)")
+
+  echo &"""{toHash}.{encodedSignature}"""
+
+proc encodeJwtfile*(file: string, key: string) =
+  if not os.fileExists(file):
+    printError &"file {file} does not exist"
+    return
+  let data = readFile file
+  encodeJwtStr(data, key)
 
 proc flattenJwtStr*(data: string): string =
   ## Extracts the 3 sections of the JWT and concatenating them into a valid
@@ -153,7 +181,6 @@ proc writeFlatJwtStr(data: string) =
     raise
 
   echo pretty jsonData
-
 
 proc writeJwtStr(data: string, raw: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string
@@ -209,6 +236,7 @@ proc main* =
 
   # Values
   var jwtStr: string
+  var secretKey: string
 
   var errorOption = false
   for kind, key, val in getopt(shortNoVal = {'h', 'v', 'd', 'e'},
@@ -222,6 +250,7 @@ proc main* =
       of "help", "h": writeHelp(); return
       of "version", "v": writeVersion(); return
       of "string", "s": jwtStr = val
+      of "key", "k": secretKey = val
       of "decode", "d": cmdDecode = true
       of "encode", "e": cmdEncode = true
       of "flatten", "f": isFlat = true
@@ -231,7 +260,7 @@ proc main* =
   if errorOption:
     quit QuitFailure
 
-  # Decode (option -d | --decode)
+  # Decode (command -d | --decode)
   if cmdDecode:
 
     if jwtStr.len == 0 and args.len == 0: # stdin
@@ -260,7 +289,14 @@ proc main* =
         if not multiFiles:
           quit QuitFailure
 
+  # Encode (command -e | --encode)
   elif cmdEncode:
+
+    ## Secret key is required
+    if secretKey.len == 0:
+      printError "A Secret key (option '--key') is required to encode a JWT token"
+      quit QuitFailure
+
     if jwtStr.len == 0 and args.len == 0: # stdin
       jwtStr = stdin.readAll()
       echo()
@@ -270,8 +306,9 @@ proc main* =
 
     if jwtStr.len > 0: # argument is a string
       try:
-        echo encodeJwtStr(jwtStr.strip())
-      except JwtException:
+        encodeJwtStr(jwtStr.strip(), secretKey)
+      except JwtException as e:
+        printError e.msg
         quit QuitFailure
       finally:
         quit QuitSuccess
@@ -282,11 +319,11 @@ proc main* =
       if multiFiles:
         styledWriteLine stderr, styleBright, &"\n{arg}:"
       try:
-        writeJwtFile arg, isFlat, isRaw
-      except:
+        encodeJwtFile(arg, secretKey)
+      except JwtException as e:
+        printError e.msg
         if not multiFiles:
           quit QuitFailure
-
 
   else:
     printError "No command were given. Existing commands are: "
