@@ -55,13 +55,14 @@ proc writeHelp =
   echo()
 
   printInfo "Usage:"
-  printField &"  {app}", " --decode <jwt_file>                  | -d <jwt_file>"
-  printField &"  {app}", " --decode --flatten <jwt_file>        | -d -f <jwt_file>"
-  printField &"  {app}", " --decode --string <jwt_string>       | -d -s=<jwt_string>"
-  printField &"  {app}", " --decode --raw --string <jwt_string> | -d -r -s=<jwt_string>"
-  printField &"  {app}", " --encode --string <jwt_string>       | -e k=<key> -s=<jwt_string>"
-  printField &"  {app}", " --version                            | -v"
-  printField &"  {app}", " --help                               | -h"
+  printField &"  {app}", " --decode <token_file>                           | -d <token_file>"
+  printField &"  {app}", " --decode --flatten <token_file>                 | -d -f <token_file>"
+  printField &"  {app}", " --decode --string <token_string>                | -d -s=<token_string>"
+  printField &"  {app}", " --decode --raw --string <token_string>          | -d -r -s=<token_string>"
+  printField &"  {app}", " --encode --key <secret> --string <json_string>  | -e k=<secret> -s=<json_string>"
+  printField &"  {app}", " --encode --key <secret> <json_file>             | -e k=<secret> <json_file>"
+  printField &"  {app}", " --version                                       | -v"
+  printField &"  {app}", " --help                                          | -h"
   echo()
   printInfo "Commands:"
   printField "  -h | --help    ", ": show this screen"
@@ -70,10 +71,10 @@ proc writeHelp =
   printField "  -e | --encode  ", ": encode a JWT Header and Payload (option key is required)"
   echo()
   printInfo "Options:"
-  printField "  -k | --key     ", ": take a secret key string as argument (required with command 'encode')"
+  printField "  -k | --key     ", ": take a secret key string as argument (required with 'encode')"
   printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
-  printField "  -f | --flatten ", ": render a JSON representation of the token with raw data for each field"
-  printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (epoch time)"
+  printField "  -f | --flatten ", ": render a JSON representation of the token with raw data for each field (only with 'decode')"
+  printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (only with 'decode')"
   echo()
 
 proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
@@ -108,7 +109,21 @@ proc encodeUrlSafe[T: byte | char](data: openArray[T]): string =
   ## b64 encode with URL safe and strip the trailing '=' signs
   encode(data, safe = true).strip(leading = false, trailing = true, chars = {'='})
 
-proc encodeJwtStr*(data: string, key: string) =
+# proc hmacEncoded(HashType: typedesc, toHash: string, key: string): string =
+#   encodeUrlSafe(HashType.hmac(key, toHash).data)
+
+proc sha2EncodedHmac(algo: string, key: string, data: string): string =
+  case algo:
+    of "HS256":
+      return encodeUrlSafe(sha256.hmac(key, data).data)
+    of "HS384":
+      return encodeUrlSafe(sha384.hmac(key, data).data)
+    of "HS512":
+      return encodeUrlSafe(sha512.hmac(key, data).data)
+    else:
+      raise newException(JwtException, &"Found algorithm '{algo}' (only 'HS256', 'HS384' and 'HS512' are supported for now)")
+
+proc encodeJwtStr*(data: string, key: string): string =
   ## Encode a JWT token using the HS256 algorithm and the key
 
   var jsonNode: JsonNode
@@ -118,34 +133,20 @@ proc encodeJwtStr*(data: string, key: string) =
   except JsonParsingError:
     raise newException(JwtException, &"invalid JWT: '{data}'")
 
-  ## TODO: validate HS256
   let algo = jsonNode["header"]["alg"].getStr
-
   let encodedHeader = encodeUrlSafe($(jsonNode["header"]))
   let encodedPayload = encodeUrlSafe($(jsonNode["payload"]))
-
   let toHash = &"""{encodedHeader}.{encodedPayload}"""
+  let encodedSignature = sha2EncodedHmac(algo, key, toHash)
 
-  var encodedSignature: string
-
-  case algo:
-    of "HS256":
-      encodedSignature = encodeUrlSafe(sha256.hmac(key, toHash).data)
-    of "HS384":
-      encodedSignature = encodeUrlSafe(sha384.hmac(key, toHash).data)
-    of "HS512":
-      encodedSignature = encodeUrlSafe(sha512.hmac(key, toHash).data)
-    else:
-      raise newException(JwtException, &"Found algorithm '{algo}' (only 'HS256', 'HS384' and 'HS512' are supported for now)")
-
-  echo &"""{toHash}.{encodedSignature}"""
+  &"""{toHash}.{encodedSignature}"""
 
 proc encodeJwtfile*(file: string, key: string) =
   if not os.fileExists(file):
     printError &"file {file} does not exist"
     return
   let data = readFile file
-  encodeJwtStr(data, key)
+  echo encodeJwtStr(data, key)
 
 proc flattenJwtStr*(data: string): string =
   ## Extracts the 3 sections of the JWT and concatenating them into a valid
@@ -306,7 +307,7 @@ proc main* =
 
     if jwtStr.len > 0: # argument is a string
       try:
-        encodeJwtStr(jwtStr.strip(), secretKey)
+        echo encodeJwtStr(jwtStr.strip(), secretKey)
       except JwtException as e:
         printError e.msg
         quit QuitFailure

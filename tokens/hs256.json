@@ -1,6 +1,6 @@
 {
   "header": {
-    "alg": "RS256",
+    "alg": "HS256",
     "typ": "JWT"
   },
   "payload": {

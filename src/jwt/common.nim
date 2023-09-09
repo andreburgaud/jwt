@@ -1,3 +1,3 @@
 const
     VERSION* = "0.6.0"
-    SUFFIX* = "rc"
+    SUFFIX* = ""

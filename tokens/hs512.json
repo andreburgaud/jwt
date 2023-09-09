@@ -1,0 +1,13 @@
+{
+    "header": {
+      "alg": "HS512",
+      "typ": "JWT"
+    },
+    "payload": {
+      "sub": "1234567890",
+      "name": "John Doe",
+      "iat": 1516239022
+    },
+    "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+  }
+  
