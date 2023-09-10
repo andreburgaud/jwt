@@ -11,7 +11,7 @@ type JwtException* = object of ValueError
 
 proc appName: string =
   ## Retrieves the application name from the executable
-  getAppFilename().extractFilename()
+  getAppFilename().extractFilename().splitFile()[1]
 
 proc printInfo(msg: string) =
   ## Print information message with a predefined style (default yellow)
