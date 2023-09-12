@@ -1,3 +1,3 @@
 const
-    VERSION* = "0.6.1"
-    SUFFIX* = ""
+    VERSION* = "0.7.0"
+    SUFFIX* = "-dev"

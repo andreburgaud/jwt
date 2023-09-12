@@ -55,6 +55,8 @@ task clean, "Ignore":
 task cleanup, "Delete generated files":
     rmDir "bin"
     rmDir "dist"
+    rmFile &"{app}"
+    rmFile "tests/tester"
 
 task dist, "Create distribution":
     exec "nimble release"

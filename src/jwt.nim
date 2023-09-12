@@ -43,10 +43,10 @@ proc writeVersion =
 
 proc writeHelp =
   ## Displays the help (usage) for the command line tool
-  
+
   writeInfo()
   let app = appName()
-  
+
   printInfo "Description:"
   echo "  Manipulate (encode, or decode) JSON Web Tokens (JWT)."
   echo()
@@ -55,7 +55,7 @@ proc writeHelp =
   printField &"  {app}", " [COMMAND] [OPTIONS] [ARGS]]"
   echo()
   printInfo "Options:"
-  printField &"  -h, --help",    "    Print help"
+  printField &"  -h, --help   ", "    Print help"
   printField &"  -v, --version", "    Print version info"
   echo()
   printInfo "Commands:"
@@ -87,7 +87,7 @@ proc writeEncodeHelp =
   printField &"  {app} encode", " --key <secret> --string <json_string>  | k=<secret> -s=<json_string>"
   printField &"  {app} encode", " --key <secret> <json_file>             | k=<secret> <json_file>"
   printField &"  {app} encode", " --help                                 | -h"
-  
+
 proc writeDecodeHelp =
   ## Decode Help
   writeInfo()
@@ -117,7 +117,7 @@ proc writeDecodeHelp =
   printField &"  {app} decode", " --string <token_string>  | -s=<token_string>"
   printField &"  {app} decode", " --help                   | -h"
 
-  
+
 proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
     ValueError, IOError].} =
   ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
@@ -297,8 +297,8 @@ proc main* =
         args.add key
     of po.cmdLongOption, po.cmdShortOption:
       case key
-      of "help", "h": 
-        if firstArg: 
+      of "help", "h":
+        if firstArg:
           writeHelp()
           return
         elif cmdDecode:
