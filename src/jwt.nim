@@ -1,4 +1,5 @@
-import base64, json, os, parseopt, strformat, strutils, terminal, times
+import std/parseopt as po
+import base64, json, os, strformat, strutils, terminal, times
 import nimcrypto
 import jwt/common
 
@@ -42,41 +43,81 @@ proc writeVersion =
 
 proc writeHelp =
   ## Displays the help (usage) for the command line tool
+  
+  writeInfo()
+  let app = appName()
+  
+  printInfo "Description:"
+  echo "  Manipulate (encode, or decode) JSON Web Tokens (JWT)."
+  echo()
+  printInfo "Usage:"
+  printField &"  {app}", " [OPTIONS]"
+  printField &"  {app}", " [COMMAND] [OPTIONS] [ARGS]]"
+  echo()
+  printInfo "Options:"
+  printField &"  -h, --help",    "    Print help"
+  printField &"  -v, --version", "    Print version info"
+  echo()
+  printInfo "Commands:"
+  printField "  decode, d  ", "    Decode a b64 encoded JWT token into a valid JSON string"
+  printField "  encode, e  ", "    Encode a JWT JSON file or string into a b64 encoded JWT token"
+  echo()
+  printField &"  {app} [COMMAND] --help", " for more information on a specific command."
+
+proc writeEncodeHelp =
+  ## Displays the help (usage) for the command line tool
   writeInfo()
   let app = appName()
   echo()
+  styledWriteLine stdout, styleBright, "Encode a JSON Web Token", resetStyle
+  echo()
   printInfo "Description:"
-  echo "  Parses an encoded JSON Web Token (JWT) and decode the"
-  echo "  JWT Header and Payload into a valid JSON content."
-  echo "  Converts dates (iat, exp) into human readable format"
-  echo "  unless the option '--raw' is passed at the command line."
+  echo "  Encode a JSON Web Token into a b64 encoded token."
+  echo "  The JSON argument can be passed via standard input, file or string."
   echo()
-  echo "  The JWT token can be passed via standard input, a file or a string."
-  echo()
-
   printInfo "Usage:"
-  printField &"  {app}", " --decode <token_file>                           | -d <token_file>"
-  printField &"  {app}", " --decode --flatten <token_file>                 | -d -f <token_file>"
-  printField &"  {app}", " --decode --string <token_string>                | -d -s=<token_string>"
-  printField &"  {app}", " --decode --raw --string <token_string>          | -d -r -s=<token_string>"
-  printField &"  {app}", " --encode --key <secret> --string <json_string>  | -e k=<secret> -s=<json_string>"
-  printField &"  {app}", " --encode --key <secret> <json_file>             | -e k=<secret> <json_file>"
-  printField &"  {app}", " --version                                       | -v"
-  printField &"  {app}", " --help                                          | -h"
-  echo()
-  printInfo "Commands:"
-  printField "  -h | --help    ", ": show this screen"
-  printField "  -v | --version ", ": show version"
-  printField "  -d | --decode  ", ": decode JWT token into a valid JSON string"
-  printField "  -e | --encode  ", ": encode a JWT Header and Payload (option key is required)"
+  printField &"  {app} encode", " [OPTIONS] [ARGUMENTS]"
   echo()
   printInfo "Options:"
-  printField "  -k | --key     ", ": take a secret key string as argument (required with 'encode')"
-  printField "  -s | --string  ", ": take a JWT token string as argument instead of file"
-  printField "  -f | --flatten ", ": render a JSON representation of the token with raw data for each field (only with 'decode')"
-  printField "  -r | --raw     ", ": keep the dates (iat, exp) as numeric values (only with 'decode')"
+  printField "  -h | --help    ", " Print help"
+  printField "  -k | --key     ", " Take a secret key string as argument (required)"
+  printField "  -s | --string  ", " Take a JWT string as argument instead of a file"
   echo()
+  printInfo "Examples:"
+  printField &"  {app} encode", " --key <secret> --string <json_string>  | k=<secret> -s=<json_string>"
+  printField &"  {app} encode", " --key <secret> <json_file>             | k=<secret> <json_file>"
+  printField &"  {app} encode", " --help                                 | -h"
+  
+proc writeDecodeHelp =
+  ## Decode Help
+  writeInfo()
+  let app = appName()
+  echo()
+  styledWriteLine stdout, styleBright, "Decode a JSON Web Token", resetStyle
 
+  echo()
+  printInfo "Description:"
+  echo "  Parse a b64 encoded JSON Web Token (JWT) and decode the"
+  echo "  JWT Header and Payload into a valid JSON content."
+  echo "  Convert dates (iat, exp) into human readable format,"
+  echo "  unless the option '--raw' is passed at the command line."
+  echo "  The encoded JWT can be passed via standard input, file"
+  echo "  or string."
+  echo()
+  printInfo "Usage:"
+  printField &"  {app} decode", " [OPTIONS] [ARGUMENTS]"
+  echo()
+  printInfo "Options:"
+  printField "  -h | --help    ", " Print help"
+  printField "  -s | --string  ", " Take the JWT string as argument instead of file"
+  printField "  -f | --flatten ", " Render a JSON representation of the token with raw data for each field"
+  printField "  -r | --raw     ", " Keep the dates (iat, exp) as numeric values"
+  echo()
+  printInfo "Examples:"
+  printField &"  {app} decode", " --string <token_string>  | -s=<token_string>"
+  printField &"  {app} decode", " --help                   | -h"
+
+  
 proc splitJwt*(data: string): (string, string, string) {.raises: [JwtException,
     ValueError, IOError].} =
   ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
@@ -239,17 +280,37 @@ proc main* =
   var jwtStr: string
   var secretKey: string
 
+  var firstArg = true
   var errorOption = false
-  for kind, key, val in getopt(shortNoVal = {'h', 'v', 'd', 'e'},
-                               longNoVal = @["help", "version", "decode", "encode"]):
+  for kind, key, val in po.getopt(shortNoVal = {'h', 'v'},
+                                  longNoVal = @["help", "version"]):
     case kind
-    of cmdEnd: break
-    of cmdArgument:
-      args.add key
-    of cmdLongOption, cmdShortOption:
+    of po.cmdEnd: break
+    of po.cmdArgument:
+      if firstArg:
+        case key
+        of "decode", "d": cmdDecode = true
+        of "encode", "e": cmdEncode = true
+        else:
+          printError &"unexpected command '{key}'"; quit QuitFailure
+      else:
+        args.add key
+    of po.cmdLongOption, po.cmdShortOption:
       case key
-      of "help", "h": writeHelp(); return
-      of "version", "v": writeVersion(); return
+      of "help", "h": 
+        if firstArg: 
+          writeHelp()
+          return
+        elif cmdDecode:
+          writeDecodeHelp()
+          return
+        elif cmdEncode:
+          writeEncodeHelp()
+          return
+      of "version", "v":
+        if firstArg:
+          writeVersion()
+          return
       of "string", "s": jwtStr = val
       of "key", "k": secretKey = val
       of "decode", "d": cmdDecode = true
@@ -258,10 +319,12 @@ proc main* =
       of "raw", "r": isRaw = true
       else: printError &"unexpected option '{key}'"; errorOption = true
 
+    firstArg = false
+
   if errorOption:
     quit QuitFailure
 
-  # Decode (command -d | --decode)
+  # Command decode
   if cmdDecode:
 
     if jwtStr.len == 0 and args.len == 0: # stdin
@@ -290,7 +353,7 @@ proc main* =
         if not multiFiles:
           quit QuitFailure
 
-  # Encode (command -e | --encode)
+  # Command encode
   elif cmdEncode:
 
     ## Secret key is required
@@ -327,11 +390,7 @@ proc main* =
           quit QuitFailure
 
   else:
-    printError "No command were given. Existing commands are: "
-    printField "  -d | --decode  ", ": to decode a JWT Header and Payload"
-    printField "  -e | --encode  ", ": to encode a JWT Header and Payload"
-    printField "  -h | --help    ", ": to display the usage"
-    printField "  -v | --version ", ": to display the version"
+    printError "No command or options given."
     echo()
     writeHelp()
 
