@@ -22,7 +22,8 @@ requires "nimcrypto"
 
 # Tasks
 task test, "Run the test suite":
-    exec &"nim c -r {testsDir}/tester"
+    exec &"nim c -r {testsDir}/test_decode.nim"
+    exec &"nim c -r {testsDir}/test_encode.nim"
 
 task debug, "Build for development":
     exec &"nim c --colors:on -o:{buildDir}/jwt {srcDir}/jwt.nim"
@@ -56,7 +57,8 @@ task cleanup, "Delete generated files":
     rmDir "bin"
     rmDir "dist"
     rmFile &"{app}"
-    rmFile "tests/tester"
+    rmFile "tests/test_decode"
+    rmFile "tests/test_encode"
 
 task dist, "Create distribution":
     exec "nimble release"
