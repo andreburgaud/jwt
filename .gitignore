@@ -1,4 +1,7 @@
 # binary generated in the project root:
+jwt
+# Don't ignore the folder src/jwt
+!src/jwt/
 jwt.exe
 bin/
 dist/
