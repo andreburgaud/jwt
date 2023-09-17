@@ -96,7 +96,7 @@ task dist, "Create distribution":
     mvFile &"{packageName}.zip", &"{distDir}/{packageName}.zip"
 
 task fmt, "Format Nim source files (https://nim-lang.org/docs/nep1.html)":
-  exec "nimpretty {app}.nimble src/{app}.nim src/jwt/*.nim"
+  exec &"nimpretty {app}.nimble src/{app}.nim src/jwt/*.nim"
 
 task tag, "Push the commits to repo and generate a new tag":
   exec "git push"
