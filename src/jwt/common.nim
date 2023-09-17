@@ -1,7 +1,7 @@
 const
-  ver* = "0.8.0"
+  ver* = "0.9.0"
     ## Application version
-  suffix* = ""
+  suffix* = "dev"
     ## Version suffix (empty for a release version)
   name* = "JWT Command Line"
     ## Command description
