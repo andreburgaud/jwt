@@ -93,7 +93,7 @@ cat tokens/hs256.token | jwt -d | jq
 ### JWT Encode JSON File
 
 ```
-./jwt encode --key secret_key tokens/hs256.json
+jwt encode --key secret_key tokens/hs256.json
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.-31VfEDt_2aatZ0NIjznd27ruqyeMC4zus1J3hjZlts
 ```
 
@@ -108,7 +108,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
 ### Pipe Encode, Decode, and Jq
 
 ```
-jwt encode --key secret_key tokens/hs256.json | ./jwt decode | jq
+jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 ```
 ```json
 {
