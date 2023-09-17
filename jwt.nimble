@@ -5,7 +5,7 @@ import src/jwt/common
 version = ver
 author = "Andre"
 description = "JWT Command Line"
-license = "MIT"
+license = lic
 srcDir = "src"
 bin = @["jwt"]
 

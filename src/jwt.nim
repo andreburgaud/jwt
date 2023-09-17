@@ -1,98 +1,37 @@
-import std/[parseopt, strformat, strutils, terminal]
-import jwt/[command, common, encode, decode, fmt]
-
-const
-  name = "JWT Command Line"
-  copyright = "Copyright (c) 2021-2023 - Andre Burgaud"
-  license = "MIT License"
-
-proc writeAppInfo =
-  ## Write a genereric information with author, version, copyright and license
-  let width = terminalWidth()
-  styledEcho fgGreen, strutils.center(&"{name} {ver}{suffix}", width - 10)
-  styledEcho fgGreen, strutils.center(copyright, width - 10)
-  styledEcho fgGreen, strutils.center(license, width - 10)
-
-proc writeVersion* =
-  ## Write the app version
-  printSuccess &"{appName()} {ver}{suffix}"
+import std/[cmdline, parseopt, strformat]
+import jwt/[command, decode, encode, fmt, help, version]
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
   ## to the proper function based on the commands and options
   ## extracted from the command line.
+  ## The options parsing is delegrated to each command execution implementation
 
-  # Commands / Options
-  var cmdEncode = false
-  var cmdDecode = false
-  var isRaw = false
-  var isFlat = false
+  var cmd: Command
 
-  # Arguments
-  var args: seq[string] = @[]
-
-  # Values
-  var jwtStr: string
-  var secretKey: string
-
-  var firstArg = true
-  var errorOption = false
-  for kind, key, val in parseopt.getopt(shortNoVal = {'h', 'v', 'r', 'f'},
-                                        longNoVal = @["help", "version", "raw", "flatten"]):
-    case kind
-    of parseopt.cmdEnd: break
-    of parseopt.cmdArgument:
-      if firstArg:
-        case key
-        of "decode", "d": cmdDecode = true
-        of "encode", "e": cmdEncode = true
-        else:
-          printError &"unexpected command '{key}'"; quit QuitFailure
-      else:
-        args.add key
-    of parseopt.cmdLongOption, parseopt.cmdShortOption:
-      case key
-      of "help", "h":
-        writeAppInfo()
-        if firstArg:
-          command.help()
-          return
-        elif cmdDecode:
-          DecodeCommand().help()
-          return
-        elif cmdEncode:
-          EncodeCommand().help()
-          return
-      of "version", "v":
-        if firstArg:
-          writeVersion()
-          return
-      of "string", "s": jwtStr = val
-      of "key", "k": secretKey = val
-      of "decode", "d": cmdDecode = true
-      of "encode", "e": cmdEncode = true
-      of "flatten", "f": isFlat = true
-      of "raw", "r": isRaw = true
-      else: printError &"unexpected option '{key}'"; errorOption = true
-
-    firstArg = false
-
-  if errorOption:
-    quit QuitFailure
-
-  # Command decode
-  if cmdDecode:
-    DecodeCommand(raw: isRaw, flatten: isFlat, str: jwtStr.strip(),
-        files: args).execute()
-
-  # Command encode
-  elif cmdEncode:
-    EncodeCommand(key: secretKey, str: jwtStr.strip(), files: args).execute()
-
-  else:
+  var p = initOptParser(commandLineParams(), shortNoVal = {'h', 'v'},
+      longNoVal = @["help", "version"])
+  p.next() # Only parse the first arguments for either a global option (-v, -h) or a command (decode, encode, help, version)
+  case p.kind
+  of parseopt.cmdEnd:
     printError "No command or options given."
-    echo()
-    command.help()
+    HelpCommand().execute()
+    return
+  of parseopt.cmdArgument:
+    case p.key
+    of decodeCmd, "d": cmd = DecodeCommand()
+    of encodeCmd, "e": cmd = EncodeCommand()
+    of helpCmd: cmd = HelpCommand() # Global help works as a command or option (--help, -h)
+    of versionCmd: cmd = VersionCommand() # Version works as a command or option (--version, -v)
+    else:
+      printError &"unexpected command '{p.key}'"; quit QuitFailure
+  of parseopt.cmdLongOption, parseopt.cmdShortOption:
+    case p.key
+    of helpCmd, "h": cmd = HelpCommand() # Global help works as a command or option (--help, -h)
+    of versionCmd, "v": cmd = VersionCommand() # Version works as a command or option (--version, -v)
+    else: printError &"unexpected option '{p.key}'"; quit QuitFailure
+
+  cmd.execute(p.remainingArgs())
 
 when isMainModule:
   main()

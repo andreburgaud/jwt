@@ -1,4 +1,4 @@
-import std/[base64, json, os, strutils, strformat, terminal]
+import std/[base64, json, os, parseopt, strutils, strformat, terminal]
 
 import nimcrypto
 
@@ -7,18 +7,11 @@ import command
 
 type
   EncodeCommand* = ref object of Command
-    ## Object containing the decode options and arguments.
 
-    key*: string
-      ## Secret key used to create the signature of the token.
-    str*: string
-      ## JSON representation of the JWT as a string.
-    files*: seq[string]
-      ## An array of JWT file (JSON format).
-
-proc help*(c: EncodeCommand) =
+proc usage() =
   ## Displays the help (usage) for the encode command.
 
+  writeAppInfo()
   let app = appName()
   echo()
   styledWriteLine stdout, styleBright, "Encode a JSON Web Token", resetStyle
@@ -75,7 +68,7 @@ proc encodeJwtStr(data: string, key: string): string =
 
   &"""{toHash}.{encodedSignature}"""
 
-proc encodeJwtfile*(file: string, key: string) =
+proc encodeJwtfile(file: string, key: string) =
   ## Encode a JSON file into a JSON Web Token (base64 encoded).
   ## The decoded JSON file should have the following format:
   ## {
@@ -97,38 +90,48 @@ proc encodeJwtfile*(file: string, key: string) =
   let data = readFile file
   echo encodeJwtStr(data, key)
 
-method execute*(c: EncodeCommand) =
+method execute*(c: EncodeCommand, params: seq[string]) =
   ## Encode command execute function.
 
-  # Secret key is required
-  if c.key.len == 0:
-    printError "A Secret key (option '--key') is required to encode a JWT token"
-    quit QuitFailure
+  var files: seq[string] = @[]
+  var str = ""
+  var secretKey = ""
 
-  if c.str.len == 0 and c.files.len == 0: # stdin
-    c.str = stdin.readAll()
+  for kind, key, val in getopt(params,
+                               shortNoVal = {'h'},
+                               longNoVal = @["help"]):
+    case kind
+    of parseopt.cmdEnd: break
+    of parseopt.cmdArgument: files.add key
+    of parseopt.cmdLongOption, parseopt.cmdShortOption:
+      case key
+      of "help", "h": usage(); return
+      of "string", "s": str = val
+      of "key", "k": secretKey = val
+      else: printError &"unexpected option '{key}'"; quit QuitFailure
+
+  if str.len == 0 and files.len == 0: # stdin
+    str = stdin.readAll()
     echo()
-    if c.str.len == 0:
+    if str.len == 0:
       printError "JWT cannot be empty"
       quit QuitFailure
 
-  if c.str.len > 0:
+  if str.len > 0:
     try:
-      echo encodeJwtStr(c.str, c.key)
-    except JwtException as e:
-      printError e.msg
+      echo encodeJwtStr(str, secretKey)
+    except JwtException:
       quit QuitFailure
     finally:
       quit QuitSuccess
 
-  # arguments are one or more files
-  let multiFiles = c.files.len > 1
-  for file in c.files:
+  # arguments are files
+  let multiFiles = files.len > 1
+  for file in files:
     if multiFiles:
       styledWriteLine stderr, styleBright, &"\n{file}:"
     try:
-      encodeJwtFile(file, c.key)
-    except JwtException as e:
-      printError e.msg
-    if not multiFiles:
-      quit QuitFailure
+      encodeJwtfile file, secretKey
+    except:
+      if not multiFiles:
+        quit QuitFailure

@@ -1,24 +1,15 @@
-import std/[base64, json, os, strformat, strutils, terminal, times]
+import std/[base64, json, os, parseopt, strformat, strutils, terminal, times]
 
 import command
 import fmt
 
 type
   DecodeCommand* = ref object of Command
-    ## Object containing the decode options and arguments.
 
-    raw*: bool
-      ## The dates of the decoded data will not be processed and remain as integer (not a human readable format).
-    flatten*: bool
-      ## The resulted decoded JSON will be flatten per https://datatracker.ietf.org/doc/html/rfc7515#section-7.2.2.
-    str*: string
-      ## Encoded token as a string.
-    files*: seq[string]
-      ## Array of encoded token files.
-
-proc help*(c: DecodeCommand) =
+proc usage() =
   ## Displays the help (usage) for the decode command.
 
+  writeAppInfo()
   let app = appName()
   echo()
   styledWriteLine stdout, styleBright, "Decode a JSON Web Token", resetStyle
@@ -108,10 +99,10 @@ proc writeFlattenJwtStr(data: string) =
 
   echo pretty jsonData
 
-proc writeJwtStr(data: string, flatten: bool, raw: bool) =
+proc writeJwtStr(data: string, isFlatten: bool, isRaw: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string.
 
-  if flatten:
+  if isFlatten:
     writeFlattenJwtStr data
     return
 
@@ -125,7 +116,7 @@ proc writeJwtStr(data: string, flatten: bool, raw: bool) =
     printError &"invalid JWT (decoded: '{jsonStr}')"
     raise
 
-  if raw:
+  if isRaw:
     # -r or --raw option was passed at the command line
     echo pretty jsonData
   else:
@@ -138,41 +129,59 @@ proc writeJwtStr(data: string, flatten: bool, raw: bool) =
       payloadNode["iat"] = convertTime(payloadNode["iat"])
     echo pretty jsonData
 
-proc writeJwtFile(file: string, flatten: bool, raw: bool) =
+proc writeJwtFile(file: string, isFlatten: bool, isRaw: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file.
 
   if not fileExists(file):
     printError &"file {file} does not exist"
     return
   let data = readFile file
-  writeJwtStr data.strip(), flatten, raw
+  writeJwtStr data.strip(), isFlatten, isRaw
 
-method execute*(c: DecodeCommand) =
+method execute*(c: DecodeCommand, params: seq[string]) =
   ## Decode command execute function.
-  if c.str.len == 0 and c.files.len == 0: # stdin
-    c.str = stdin.readAll()
+  var files: seq[string] = @[]
+  var isFlatten = false
+  var isRaw = false
+  var str = ""
+  var errorOption = false
+
+  for kind, key, val in getopt(params,
+                               shortNoVal = {'h', 'r', 'f'},
+                               longNoVal = @["help", "raw", "flatten"]):
+    case kind
+    of parseopt.cmdEnd: break
+    of parseopt.cmdArgument: files.add key
+    of parseopt.cmdLongOption, parseopt.cmdShortOption:
+      case key
+      of "help", "h": usage(); return
+      of "string", "s": str = val
+      of "flatten", "f": isFlatten = true
+      of "raw", "r": isRaw = true
+      else: printError &"unexpected option '{key}'"; errorOption = true
+
+  if str.len == 0 and files.len == 0: # stdin
+    str = stdin.readAll()
     echo()
-    if c.str.len == 0:
+    if str.len == 0:
       printError "JWT cannot be empty"
       quit QuitFailure
 
-  if c.str.len > 0:
+  if str.len > 0:
     try:
-      writeJwtStr c.str, c.flatten, c.raw
+      writeJwtStr str, isFlatten, isRaw
     except JwtException:
       quit QuitFailure
     finally:
       quit QuitSuccess
 
   # arguments are files
-  let multiFiles = c.files.len > 1
-  for file in c.files:
+  let multiFiles = files.len > 1
+  for file in files:
     if multiFiles:
       styledWriteLine stderr, styleBright, &"\n{file}:"
     try:
-      writeJwtFile file, c.flatten, c.raw
+      writeJwtFile file, isFlatten, isRaw
     except:
       if not multiFiles:
         quit QuitFailure
-
-
