@@ -144,7 +144,6 @@ method execute*(c: DecodeCommand, params: seq[string]) =
   var isFlatten = false
   var isRaw = false
   var str = ""
-  var errorOption = false
 
   for kind, key, val in getopt(params,
                                shortNoVal = {'h', 'r', 'f'},
@@ -158,7 +157,7 @@ method execute*(c: DecodeCommand, params: seq[string]) =
       of "string", "s": str = val
       of "flatten", "f": isFlatten = true
       of "raw", "r": isRaw = true
-      else: printError &"unexpected option '{key}'"; errorOption = true
+      else: printError &"unexpected option '{key}' for command '{decodeCmd}'"; quit QuitFailure
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll()

@@ -73,7 +73,7 @@ jwt d tokens\hs256.token | jq -C
 ### From stdin
 
 ```
-cat tokens/hs256.token | jwt -d | jq
+cat tokens/hs256.token | jwt decode | jq
 ```
 ```json
 {
@@ -131,7 +131,7 @@ jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 jwt --help
 ```
 ```
-                             JWT Command Line 0.7.0
+                             JWT Command Line 0.8.0
                        Copyright (c) 2021-2023 - Andre Burgaud
                                      MIT License
 Description:
