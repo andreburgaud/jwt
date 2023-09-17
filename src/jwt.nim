@@ -2,20 +2,20 @@ import std/[parseopt, strformat, strutils, terminal]
 import jwt/[command, common, encode, decode, fmt]
 
 const
-  NAME = "JWT Command Line"
-  COPYRIGHT = "Copyright (c) 2021-2023 - Andre Burgaud"
-  LICENSE = "MIT License"
+  name = "JWT Command Line"
+  copyright = "Copyright (c) 2021-2023 - Andre Burgaud"
+  license = "MIT License"
 
 proc writeAppInfo =
   ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
-  styledEcho fgGreen, strutils.center(&"{NAME} {VERSION}{SUFFIX}", width - 10)
-  styledEcho fgGreen, strutils.center(COPYRIGHT, width - 10)
-  styledEcho fgGreen, strutils.center(LICENSE, width - 10)
+  styledEcho fgGreen, strutils.center(&"{name} {ver}{suffix}", width - 10)
+  styledEcho fgGreen, strutils.center(copyright, width - 10)
+  styledEcho fgGreen, strutils.center(license, width - 10)
 
 proc writeVersion* =
   ## Write the app version
-  printSuccess &"{appName()} {VERSION}{SUFFIX}"
+  printSuccess &"{appName()} {ver}{suffix}"
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
@@ -37,8 +37,8 @@ proc main* =
 
   var firstArg = true
   var errorOption = false
-  for kind, key, val in parseopt.getopt(shortNoVal = {'h', 'v'},
-                                        longNoVal = @["help", "version"]):
+  for kind, key, val in parseopt.getopt(shortNoVal = {'h', 'v', 'r', 'f'},
+                                        longNoVal = @["help", "version", "raw", "flatten"]):
     case kind
     of parseopt.cmdEnd: break
     of parseopt.cmdArgument:

@@ -5,6 +5,7 @@ include jwt/decode
 const
   ENCODED_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
   JSON_JWT = """{"header":{"alg":"HS256","typ":"JWT"},"payload":{"sub":"1234567890","name":"John Doe","iat":1516239022},"signature":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}"""
+  FLATTEN_JSON_JWT = """{"header":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9","payload":"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ","signature":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}"""
 
   BAD_TWO_PARTS_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQSflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
   
@@ -45,6 +46,11 @@ suite "decode":
     let jsonStr = decodeJwtStr BAD_JWT
     check jsonStr == BAD_JSON
 
+  test "flatten JWT":
+    let jsonStr = flattenJwtStr ENCODED_JWT
+    check jsonStr == FLATTEN_JSON_JWT
+
   test "JSON parse error":
     expect JsonParsingError:
       discard parseJson BAD_JSON
+

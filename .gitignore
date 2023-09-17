@@ -3,7 +3,11 @@ jwt
 jwt.exe
 bin/
 dist/
-tests/tester
-tests/tester.exe
-tests/tester.dSYM
+htmldocs/
+tests/test_decode
+tests/test_encode
+tests/test_decode.exe
+tests/test_encode.exe
+tests/test_decode.dSYM
+tests/test_encode.dSYM
 tokens/out
