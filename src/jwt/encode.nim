@@ -108,7 +108,9 @@ method execute*(c: EncodeCommand, params: seq[string]) =
       of "help", "h": usage(); return
       of "string", "s": str = val
       of "key", "k": secretKey = val
-      else: printError &"unexpected option '{key}' for command '{encodeCmd}'"; quit QuitFailure
+      else:
+        printError &"unexpected option '{key}' for command '{encodeCmd}'"
+        quit QuitFailure
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll()
