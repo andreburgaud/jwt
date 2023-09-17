@@ -56,6 +56,7 @@ task clean, "Ignore":
 task cleanup, "Delete generated files":
   rmDir "bin"
   rmDir "dist"
+  rmDir "htmldocs"
   rmFile &"{app}"
   rmFile "tests/test_decode"
   rmFile "tests/test_encode"
