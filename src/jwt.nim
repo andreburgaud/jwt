@@ -31,7 +31,11 @@ proc main* =
     of versionCmd, "v": cmd = VersionCommand() # Version works as a command or option (--version, -v)
     else: printError &"unexpected option '{p.key}'"; quit QuitFailure
 
-  cmd.execute(p.remainingArgs())
+  try:
+    cmd.execute(p.remainingArgs())
+  except:
+    printError getCurrentExceptionMsg()
+    quit QuitFailure
 
 when isMainModule:
   main()

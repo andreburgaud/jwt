@@ -85,8 +85,8 @@ proc encodeJwtfile(file: string, key: string) =
   ## }
 
   if not os.fileExists(file):
-    printError &"file {file} does not exist"
-    return
+    raise newException(JwtException, &"file '{file}' does not exist")
+
   let data = readFile file
   echo encodeJwtStr(data, key)
 
@@ -109,23 +109,16 @@ method execute*(c: EncodeCommand, params: seq[string]) =
       of "string", "s": str = val
       of "key", "k": secretKey = val
       else:
-        printError &"unexpected option '{key}' for command '{encodeCmd}'"
-        quit QuitFailure
+        raise newException(JwtException, &"unexpected option '{key}' for command '{encodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll()
     echo()
     if str.len == 0:
-      printError "JWT cannot be empty"
-      quit QuitFailure
+      raise newException(JwtException, "JWT cannot be empty")
 
   if str.len > 0:
-    try:
-      echo encodeJwtStr(str, secretKey)
-    except JwtException:
-      quit QuitFailure
-    finally:
-      quit QuitSuccess
+    echo encodeJwtStr(str, secretKey)
 
   # arguments are files
   let multiFiles = files.len > 1
@@ -136,4 +129,7 @@ method execute*(c: EncodeCommand, params: seq[string]) =
       encodeJwtfile file, secretKey
     except:
       if not multiFiles:
-        quit QuitFailure
+        raise
+      else: 
+        # If multifiles printe error and continue processing other files
+        printError getCurrentExceptionMsg()

@@ -36,15 +36,15 @@ proc usage() =
   printField &"  {app} decode", " --help                   | -h"
 
 proc splitJwt(data: string): (string, string, string) {.raises: [JwtException,
-    ValueError, IOError].} =
+    ValueError].} =
+  
   ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
   ## is separated by a dot ``.``.
 
   let fields = data.split(".")
   if fields.len != 3:
-    let msg = &"JWT token with {fields.len} parts instead of 3 (encoded: '{data}')"
-    printError msg
-    raise newException(JwtException, msg)
+    raise newException(JwtException, &"JWT token with {fields.len} parts instead of 3 (encoded: '{data}')")
+  
   (fields[0], fields[1], fields[2])
 
 proc decodeJwtStr(data: string): string =
@@ -133,8 +133,8 @@ proc writeJwtFile(file: string, isFlatten: bool, isRaw: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file.
 
   if not fileExists(file):
-    printError &"file {file} does not exist"
-    return
+    raise newException(JwtException, &"file '{file}' does not exist")
+
   let data = readFile file
   writeJwtStr data.strip(), isFlatten, isRaw
 
@@ -158,23 +158,16 @@ method execute*(c: DecodeCommand, params: seq[string]) =
       of "flatten", "f": isFlatten = true
       of "raw", "r": isRaw = true
       else:
-        printError &"unexpected option '{key}' for command '{decodeCmd}'"
-        quit QuitFailure
+        raise newException(JwtException, &"unexpected option '{key}' for command '{decodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll()
     echo()
     if str.len == 0:
-      printError "JWT cannot be empty"
-      quit QuitFailure
+      raise newException(JwtException, "JWT cannot be empty")
 
   if str.len > 0:
-    try:
-      writeJwtStr str, isFlatten, isRaw
-    except JwtException:
-      quit QuitFailure
-    finally:
-      quit QuitSuccess
+    writeJwtStr str, isFlatten, isRaw
 
   # arguments are files
   let multiFiles = files.len > 1
@@ -185,4 +178,7 @@ method execute*(c: DecodeCommand, params: seq[string]) =
       writeJwtFile file, isFlatten, isRaw
     except:
       if not multiFiles:
-        quit QuitFailure
+        raise
+      else: 
+        # If multifiles printe error and continue processing other files
+        printError getCurrentExceptionMsg()
