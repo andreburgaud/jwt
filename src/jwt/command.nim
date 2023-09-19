@@ -19,9 +19,9 @@ method execute*(c: Command, params: seq[string] = @[]) {.base.} =
 proc writeAppInfo* =
   ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
-  styledEcho fgGreen, center(&"{name} {ver}{suffix}", width - 10)
-  styledEcho fgGreen, center(copyright, width - 10)
-  styledEcho fgGreen, center(lic, width - 10)
+  styledEcho fgGreen, styleBright, center(&"{name} {ver}{suffix}", width - 10)
+  styledEcho fgGreen, styleBright, center(copyright, width - 10)
+  styledEcho fgGreen, styleBright, center(lic, width - 10)
 
 proc appName*: string =
   ## Retrieves the application name from the executable

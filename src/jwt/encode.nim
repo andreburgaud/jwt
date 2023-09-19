@@ -24,9 +24,9 @@ proc usage() =
   printField &"  {app} encode", " [OPTIONS] [ARGUMENTS]"
   echo()
   printInfo "Options:"
-  printField "  -h | --help    ", " Print help"
-  printField "  -k | --key     ", " Take a secret key string as argument (required)"
-  printField "  -s | --string  ", " Take a JWT string as argument instead of a file"
+  printField "  -h, --help    ", " Print help"
+  printField "  -k, --key     ", " Take a secret key string as argument (required)"
+  printField "  -s, --string  ", " Take a JWT string as argument instead of a file"
   echo()
   printInfo "Examples:"
   printField &"  {app} encode", " --key <secret> --string <json_string>  | k=<secret> -s=<json_string>"
@@ -97,23 +97,27 @@ method execute*(c: EncodeCommand, params: seq[string]) =
   var str = ""
   var secretKey = ""
 
-  for kind, key, val in getopt(params,
-                               shortNoVal = {'h'},
-                               longNoVal = @["help"]):
-    case kind
-    of parseopt.cmdEnd: break
-    of parseopt.cmdArgument: files.add key
-    of parseopt.cmdLongOption, parseopt.cmdShortOption:
-      case key
-      of "help", "h": usage(); return
-      of "string", "s": str = val
-      of "key", "k": secretKey = val
-      else:
-        raise newException(JwtException, &"unexpected option '{key}' for command '{encodeCmd}'")
+  if params.len > 0:
+    # overcome a bug if cmdline is empty it gets the first argument
+    # of the previous getopt executed in jwt.nim
+    # Does not happen if at least one argument exist in params
+    for kind, key, val in getopt(params,
+                                 shortNoVal = {'h'},
+                                 longNoVal = @["help"]):
+      case kind
+      of cmdEnd: break
+      of cmdArgument: files.add key
+      of cmdLongOption, cmdShortOption:
+        case key
+        of "help", "h": usage(); return
+        of "string", "s": str = val
+        of "key", "k": secretKey = val
+        else:
+          raise newException(JwtException,
+              &"unexpected option '{key}' for command '{encodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
-    str = stdin.readAll()
-    echo()
+    str = stdin.readAll().strip()
     if str.len == 0:
       raise newException(JwtException, "JWT cannot be empty")
 
@@ -130,6 +134,6 @@ method execute*(c: EncodeCommand, params: seq[string]) =
     except:
       if not multiFiles:
         raise
-      else: 
+      else:
         # If multifiles printe error and continue processing other files
         printError getCurrentExceptionMsg()

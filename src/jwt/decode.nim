@@ -26,10 +26,10 @@ proc usage() =
   printField &"  {app} decode", " [OPTIONS] [ARGUMENTS]"
   echo()
   printInfo "Options:"
-  printField "  -h | --help    ", " Print help"
-  printField "  -s | --string  ", " Take the JWT string as argument instead of file"
-  printField "  -f | --flatten ", " Render a JSON representation of the token with raw data for each field"
-  printField "  -r | --raw     ", " Keep the dates (iat, exp) as numeric values"
+  printField "  -h, --help         ", " Print help"
+  printField "  -s, --string       ", " Take the JWT string as argument instead of file"
+  printField "      --flatten      ", " Render a JSON representation of the token with raw data for each field"
+  printField "      --format-dates ", " Format dates (iat, exp, nbf) into a UTC formatted time"
   echo()
   printInfo "Examples:"
   printField &"  {app} decode", " --string <token_string>  | -s=<token_string>"
@@ -37,14 +37,14 @@ proc usage() =
 
 proc splitJwt(data: string): (string, string, string) {.raises: [JwtException,
     ValueError].} =
-  
+
   ## Splits a JWT in 3 parts. A JWT contains 3 parts, a header, a payload and a signature. Each part
   ## is separated by a dot ``.``.
 
   let fields = data.split(".")
   if fields.len != 3:
     raise newException(JwtException, &"JWT token with {fields.len} parts instead of 3 (encoded: '{data}')")
-  
+
   (fields[0], fields[1], fields[2])
 
 proc decodeJwtStr(data: string): string =
@@ -99,7 +99,7 @@ proc writeFlattenJwtStr(data: string) =
 
   echo pretty jsonData
 
-proc writeJwtStr(data: string, isFlatten: bool, isRaw: bool) =
+proc writeJwtStr(data: string, isFlatten: bool, isFormatDates: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string.
 
   if isFlatten:
@@ -116,10 +116,7 @@ proc writeJwtStr(data: string, isFlatten: bool, isRaw: bool) =
     printError &"invalid JWT (decoded: '{jsonStr}')"
     raise
 
-  if isRaw:
-    # -r or --raw option was passed at the command line
-    echo pretty jsonData
-  else:
+  if isFormatDates:
     # converts dates into human readable dates
     # For example 1627425118 is converted to "2021-07-27T17:31:58-05:00"
     let payloadNode = jsonData["payload"]
@@ -128,46 +125,53 @@ proc writeJwtStr(data: string, isFlatten: bool, isRaw: bool) =
     if payloadNode.hasKey("iat"):
       payloadNode["iat"] = convertTime(payloadNode["iat"])
     echo pretty jsonData
+  else:
+    echo pretty jsonData
 
-proc writeJwtFile(file: string, isFlatten: bool, isRaw: bool) =
+proc writeJwtFile(file: string, isFlatten: bool, isFormatDates: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file.
 
   if not fileExists(file):
     raise newException(JwtException, &"file '{file}' does not exist")
 
   let data = readFile file
-  writeJwtStr data.strip(), isFlatten, isRaw
+  writeJwtStr data.strip(), isFlatten, isFormatDates
 
 method execute*(c: DecodeCommand, params: seq[string]) =
   ## Decode command execute function.
   var files: seq[string] = @[]
   var isFlatten = false
-  var isRaw = false
+  var isFormatDates = false
   var str = ""
 
-  for kind, key, val in getopt(params,
-                               shortNoVal = {'h', 'r', 'f'},
-                               longNoVal = @["help", "raw", "flatten"]):
-    case kind
-    of parseopt.cmdEnd: break
-    of parseopt.cmdArgument: files.add key
-    of parseopt.cmdLongOption, parseopt.cmdShortOption:
-      case key
-      of "help", "h": usage(); return
-      of "string", "s": str = val
-      of "flatten", "f": isFlatten = true
-      of "raw", "r": isRaw = true
-      else:
-        raise newException(JwtException, &"unexpected option '{key}' for command '{decodeCmd}'")
+  if params.len > 0:
+    # overcome a bug if cmdline is empty it gets the first argument
+    # of the previous getopt executed in jwt.nim
+    # Does not happen if at least one argument exist in params
+    for kind, key, val in getopt(params,
+                                 shortNoVal = {'h'},
+                                 longNoVal = @["help", "format-dates", "flatten"]):
+      case kind
+      of cmdEnd: break
+      of cmdArgument:
+        files.add key
+      of cmdLongOption, cmdShortOption:
+        case key
+        of "help", "h": usage(); return
+        of "string", "s": str = val
+        of "flatten": isFlatten = true
+        of "format-dates": isFormatDates = true
+        else:
+          raise newException(JwtException,
+              &"unexpected option '{key}' for command '{decodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
-    str = stdin.readAll()
-    echo()
+    str = stdin.readAll().strip()
     if str.len == 0:
       raise newException(JwtException, "JWT cannot be empty")
 
   if str.len > 0:
-    writeJwtStr str, isFlatten, isRaw
+    writeJwtStr str, isFlatten, isFormatDates
 
   # arguments are files
   let multiFiles = files.len > 1
@@ -175,10 +179,10 @@ method execute*(c: DecodeCommand, params: seq[string]) =
     if multiFiles:
       styledWriteLine stderr, styleBright, &"\n{file}:"
     try:
-      writeJwtFile file, isFlatten, isRaw
+      writeJwtFile file, isFlatten, isFormatDates
     except:
       if not multiFiles:
         raise
-      else: 
-        # If multifiles printe error and continue processing other files
+      else:
+        # If multifiles print error and continue processing other files
         printError getCurrentExceptionMsg()

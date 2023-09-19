@@ -6,7 +6,7 @@
 
 ### JWT Decode Token File
 
-```
+```bash
 jwt decode tokens/hs256.token
 ```
 ```json
@@ -18,7 +18,7 @@ jwt decode tokens/hs256.token
   "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": "2018-01-17T19:30:22-06:00"
+    "iat": 1516239022
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 }
@@ -26,7 +26,7 @@ jwt decode tokens/hs256.token
 
 ### JWT Decode Token String
 
-```
+```bash
 jwt decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
 ```
 ```json
@@ -38,7 +38,7 @@ jwt decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODk
   "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": "2018-01-17T19:30:22-06:00"
+    "iat": 1516239022
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 }
@@ -46,7 +46,7 @@ jwt decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODk
 
 ### Piping with jq
 
-```
+```bash
 jwt decode tokens/hs256.token | jq
 ```
 ```json
@@ -58,7 +58,7 @@ jwt decode tokens/hs256.token | jq
   "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": "2018-01-17T19:30:22-06:00"
+    "iat": 1516239022
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 }
@@ -66,13 +66,13 @@ jwt decode tokens/hs256.token | jq
 
 The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data. On Windows, add option `-C` (colorize JSON) to the `jq` command, as follows:
 
-```
+```bash
 jwt d tokens\hs256.token | jq -C
 ```
 
 ### From stdin
 
-```
+```bash
 cat tokens/hs256.token | jwt decode | jq
 ```
 ```json
@@ -84,7 +84,7 @@ cat tokens/hs256.token | jwt decode | jq
   "payload": {
     "sub": "1234567890",
     "name": "John Doe",
-    "iat": "2018-01-17T19:30:22-06:00"
+    "iat": 1516239022
   },
   "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 }
@@ -92,14 +92,14 @@ cat tokens/hs256.token | jwt decode | jq
 
 ### JWT Encode JSON File
 
-```
+```bash
 jwt encode --key secret_key tokens/hs256.json
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.-31VfEDt_2aatZ0NIjznd27ruqyeMC4zus1J3hjZlts
 ```
 
 ### JWT Encode JSON String
 
-```
+```bash
 export JWT_JSON='{"header":{"alg":"HS256","typ":"JWT"},"payload":{"sub":"1234567890","name":"John Doe","iat":1516239022},"signature":"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"}'
 jwt encode --key secret_key --string "$JWT_JSON"
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.-31VfEDt_2aatZ0NIjznd27ruqyeMC4zus1J3hjZlts
@@ -107,7 +107,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
 
 ### Pipe Encode, Decode, and Jq
 
-```
+```bash
 jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 ```
 ```json
@@ -127,7 +127,7 @@ jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 
 ### Help
 
-```
+```bash
 jwt --help
 ```
 ```
