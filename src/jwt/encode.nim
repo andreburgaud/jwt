@@ -7,6 +7,7 @@ import command
 
 type
   EncodeCommand* = ref object of Command
+    p*: var OptParser
 
 proc usage() =
   ## Displays the help (usage) for the encode command.
@@ -90,31 +91,26 @@ proc encodeJwtfile(file: string, key: string) =
   let data = readFile file
   echo encodeJwtStr(data, key)
 
-method execute*(c: EncodeCommand, params: seq[string]) =
+method execute*(c: EncodeCommand) =
   ## Encode command execute function.
 
   var files: seq[string] = @[]
   var str = ""
   var secretKey = ""
 
-  if params.len > 0:
-    # overcome a bug if cmdline is empty it gets the first argument
-    # of the previous getopt executed in jwt.nim
-    # Does not happen if at least one argument exist in params
-    for kind, key, val in getopt(params,
-                                 shortNoVal = {'h'},
-                                 longNoVal = @["help"]):
-      case kind
-      of cmdEnd: break
-      of cmdArgument: files.add key
-      of cmdLongOption, cmdShortOption:
-        case key
-        of "help", "h": usage(); return
-        of "string", "s": str = val
-        of "key", "k": secretKey = val
-        else:
-          raise newException(JwtException,
-              &"unexpected option '{key}' for command '{encodeCmd}'")
+  while true:
+    c.p.next()
+    case c.p.kind
+    of cmdEnd: break
+    of cmdArgument: files.add c.p.key
+    of cmdLongOption, cmdShortOption:
+      case c.p.key
+      of "help", "h": usage(); return
+      of "string", "s": str = c.p.val
+      of "key", "k": secretKey = c.p.val
+      else:
+        raise newException(JwtException,
+            &"unexpected option '{c.p.key}' for command '{encodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll().strip()

@@ -8,6 +8,6 @@ type
   VersionCommand* = ref object of Command
     ## Object containing the decode options and arguments.
 
-method execute*(c: VersionCommand, params: seq[string] = @[]) =
+method execute*(c: VersionCommand) =
   ## Print the app version
   printSuccess &"{appName()} {ver}{suffix}"

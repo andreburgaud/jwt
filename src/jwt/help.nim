@@ -29,6 +29,6 @@ proc usage() =
   echo()
   printField &"  {app} [COMMAND] --help", " for more information on a specific command."
 
-method execute*(c: HelpCommand, params: seq[string] = @[]) =
+method execute*(c: HelpCommand) =
   ## Help command execute function.
   usage()

@@ -12,7 +12,7 @@ const
   helpCmd* = "help"
   versionCmd* = "version"
 
-method execute*(c: Command, params: seq[string] = @[]) {.base.} =
+method execute*(c: Command) {.base.} =
   ## Base execute method
   raise newException(CatchableError, "Method without override")
 

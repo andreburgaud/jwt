@@ -5,6 +5,7 @@ import fmt
 
 type
   DecodeCommand* = ref object of Command
+    p*: var OptParser
 
 proc usage() =
   ## Displays the help (usage) for the decode command.
@@ -137,33 +138,29 @@ proc writeJwtFile(file: string, isFlatten: bool, isFormatDates: bool) =
   let data = readFile file
   writeJwtStr data.strip(), isFlatten, isFormatDates
 
-method execute*(c: DecodeCommand, params: seq[string]) =
+method execute*(c: DecodeCommand) =
   ## Decode command execute function.
+
   var files: seq[string] = @[]
   var isFlatten = false
   var isFormatDates = false
   var str = ""
 
-  if params.len > 0:
-    # overcome a bug if cmdline is empty it gets the first argument
-    # of the previous getopt executed in jwt.nim
-    # Does not happen if at least one argument exist in params
-    for kind, key, val in getopt(params,
-                                 shortNoVal = {'h'},
-                                 longNoVal = @["help", "format-dates", "flatten"]):
-      case kind
-      of cmdEnd: break
-      of cmdArgument:
-        files.add key
-      of cmdLongOption, cmdShortOption:
-        case key
-        of "help", "h": usage(); return
-        of "string", "s": str = val
-        of "flatten": isFlatten = true
-        of "format-dates": isFormatDates = true
-        else:
-          raise newException(JwtException,
-              &"unexpected option '{key}' for command '{decodeCmd}'")
+  while true:
+    c.p.next()
+    case c.p.kind
+    of cmdEnd: break
+    of cmdArgument:
+      files.add c.p.key
+    of cmdLongOption, cmdShortOption:
+      case c.p.key
+      of "help", "h": usage(); return
+      of "string", "s": str = c.p.val
+      of "flatten": isFlatten = true
+      of "format-dates": isFormatDates = true
+      else:
+        raise newException(JwtException,
+            &"unexpected option '{c.p.key}' for command '{decodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll().strip()
