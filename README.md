@@ -67,7 +67,7 @@ jwt decode tokens/hs256.token | jq
 The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data. On Windows, add option `-C` (colorize JSON) to the `jq` command, as follows:
 
 ```bash
-jwt d tokens\hs256.token | jq -C
+jwt decode tokens\hs256.token | jq -C
 ```
 
 ### From stdin
@@ -131,7 +131,7 @@ jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 jwt --help
 ```
 ```
-                             JWT Command Line 0.8.0
+                             JWT Command Line 0.9.0
                        Copyright (c) 2021-2023 - Andre Burgaud
                                      MIT License
 Description:
@@ -146,8 +146,8 @@ Options:
   -v, --version    Print version info
 
 Commands:
-  decode, d      Decode a b64 encoded JWT token into a valid JSON string
-  encode, e      Encode a JWT JSON file or string into a b64 encoded JWT token
+  decode    Decode a b64 encoded JWT token into a valid JSON string
+  encode    Encode a JWT JSON file or string into a b64 encoded JWT token
 
   jwt [COMMAND] --help for more information on a specific command.
 
