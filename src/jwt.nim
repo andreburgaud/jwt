@@ -1,4 +1,4 @@
-import std/[parseopt, strformat]
+import std/[cmdline, strformat, strutils]
 import jwt/[command, decode, encode, fmt, help, version]
 
 proc main* =
@@ -8,28 +8,26 @@ proc main* =
   ## The options parsing is delegrated to each command execution implementation
 
   var cmd: Command
+  var params = commandLineParams()
 
-  var p = initOptParser(shortNoVal = {'h', 'v'},
-                        longNoVal = @["help", "version"])
-  p.next() # Only parse the first arguments for either a global option (-v, -h) or a command (decode, encode, help, version)
-  case p.kind
-  of cmdEnd:
+  if params.len == 0:
     printError "No command or options given."
-    HelpCommand().execute()
     quit QuitFailure
-  of cmdArgument:
-    case p.key
-    of decodeCmd, "d": cmd = DecodeCommand(p: p)
-    of encodeCmd, "e": cmd = EncodeCommand(p: p)
-    of helpCmd: cmd = HelpCommand() # Global help works as a command or option (--help, -h)
-    of versionCmd: cmd = VersionCommand() # Version works as a command or option (--version, -v)
+
+  let arg: string = params[0]
+  let rest = params[1..params.high]
+
+  case arg
+  of "-h", "--help": cmd = HelpCommand()
+  of "-v", "--version": cmd = VersionCommand()
+  of "decode": cmd = DecodeCommand(args: rest)
+  of "encode": cmd = EncodeCommand(args: rest)
+  else:
+    if arg.startsWith('-'):
+      printError &"unexpected option '{arg}'"
     else:
-      printError &"unexpected command '{p.key}'"; quit QuitFailure
-  of cmdLongOption, cmdShortOption:
-    case p.key
-    of helpCmd, "h": cmd = HelpCommand() # Global help works as a command or option (--help, -h)
-    of versionCmd, "v": cmd = VersionCommand() # Version works as a command or option (--version, -v)
-    else: printError &"unexpected option '{p.key}'"; quit QuitFailure
+      printError &"unexpected command '{arg}'"
+    quit QuitFailure
 
   try:
     cmd.execute()

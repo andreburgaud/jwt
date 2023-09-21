@@ -5,7 +5,7 @@ import fmt
 
 type
   DecodeCommand* = ref object of Command
-    p*: var OptParser
+    args*: var seq[string] = @[]
 
 proc usage() =
   ## Displays the help (usage) for the decode command.
@@ -146,26 +146,33 @@ method execute*(c: DecodeCommand) =
   var isFormatDates = false
   var str = ""
 
-  while true:
-    c.p.next()
-    case c.p.kind
-    of cmdEnd: break
-    of cmdArgument:
-      files.add c.p.key
-    of cmdLongOption, cmdShortOption:
-      case c.p.key
-      of "help", "h": usage(); return
-      of "string", "s": str = c.p.val
-      of "flatten": isFlatten = true
-      of "format-dates": isFormatDates = true
-      else:
-        raise newException(JwtException,
-            &"unexpected option '{c.p.key}' for command '{decodeCmd}'")
+  if c.args.len > 0:
+    for kind, key, val in getopt(c.args,
+                                 shortNoVal = {'h'},
+                                 longNoVal = @["help", "flatten",
+                                     "format-dates"]):
+      case kind
+      of cmdEnd: break
+      of cmdArgument:
+        files.add key
+      of cmdLongOption, cmdShortOption:
+        case key
+        of "help", "h": usage(); return
+        of "string", "s": str = val
+        of "flatten": isFlatten = true
+        of "format-dates": isFormatDates = true
+        else:
+          raise newException(JwtException,
+              &"unexpected option '{key}' for command '{decodeCmd}'")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll().strip()
     if str.len == 0:
       raise newException(JwtException, "JWT cannot be empty")
+
+  if isFlatten and isFormatDates:
+    raise newException(JwtException,
+      &"do not use '--format-dates' with option '--flatten'")
 
   if str.len > 0:
     writeJwtStr str, isFlatten, isFormatDates

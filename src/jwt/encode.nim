@@ -7,7 +7,7 @@ import command
 
 type
   EncodeCommand* = ref object of Command
-    p*: var OptParser
+    args*: var seq[string] = @[]
 
 proc usage() =
   ## Displays the help (usage) for the encode command.
@@ -98,19 +98,29 @@ method execute*(c: EncodeCommand) =
   var str = ""
   var secretKey = ""
 
-  while true:
-    c.p.next()
-    case c.p.kind
-    of cmdEnd: break
-    of cmdArgument: files.add c.p.key
-    of cmdLongOption, cmdShortOption:
-      case c.p.key
-      of "help", "h": usage(); return
-      of "string", "s": str = c.p.val
-      of "key", "k": secretKey = c.p.val
-      else:
-        raise newException(JwtException,
-            &"unexpected option '{c.p.key}' for command '{encodeCmd}'")
+  if c.args.len > 0:
+    for kind, key, val in getopt(c.args,
+                                 shortNoVal = {'h'},
+                                 longNoVal = @["help"]):
+      case kind
+      of cmdEnd: break
+      of cmdArgument:
+        files.add key
+      of cmdLongOption, cmdShortOption:
+        case key
+        of "help", "h": usage(); return
+        of "string", "s":
+          str = val
+          if str.len == 0:
+            raise newException(JwtException, "JWT string cannot be empty")
+        of "key", "k": secretKey = val
+        else:
+          raise newException(JwtException,
+                             &"unexpected option '{key}' for command '{decodeCmd}'")
+
+  if secretKey.len == 0:
+    raise newException(JwtException,
+                       &"option '--key' is required to encode a JSN Web Token")
 
   if str.len == 0 and files.len == 0: # stdin
     str = stdin.readAll().strip()
