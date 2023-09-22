@@ -1,5 +1,6 @@
 import std/[os, strformat, strutils, terminal]
 import common
+import fmt
 
 type
   Command* = ref object of RootObj
@@ -16,12 +17,12 @@ method execute*(c: Command) {.base.} =
   ## Base execute method
   raise newException(CatchableError, "Method without override")
 
-proc writeAppInfo* =
+proc writeAppInfo*(noColor: bool=false) =
   ## Write a genereric information with author, version, copyright and license
   let width = terminalWidth()
-  styledEcho fgGreen, styleBright, center(&"{name} {ver}{suffix}", width - 10)
-  styledEcho fgGreen, styleBright, center(copyright, width - 10)
-  styledEcho fgGreen, styleBright, center(lic, width - 10)
+  printSuccess center(&"{name} {ver}{suffix}", width - 10)
+  printSuccess center(copyright, width - 10)
+  printSuccess center(lic, width - 10)
 
 proc appName*: string =
   ## Retrieves the application name from the executable
