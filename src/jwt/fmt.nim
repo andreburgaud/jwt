@@ -60,7 +60,8 @@ proc newIndent(curr, indent: int, ml: bool): int =
   if ml: return curr + indent
   else: return indent
 
-proc toColorJson(node: JsonNode, indent = 2, ml = true, lstArr = false, currIndent = 0) =
+proc toColorJson(node: JsonNode, indent = 2, ml = true, lstArr = false,
+    currIndent = 0) =
   ## Modification of toPretty function https://github.com/nim-lang/Nim/blob/version-2-0/lib/pure/json.nim
   case node.kind
   of JObject:
@@ -111,7 +112,8 @@ proc toColorJson(node: JsonNode, indent = 2, ml = true, lstArr = false, currInde
       for i in 0..len(node.elems)-1:
         if i > 0:
           printJsonSep(",")
-        toColorJson(node.elems[i], indent, ml, true, newIndent(currIndent, indent, ml))
+        toColorJson(node.elems[i], indent, ml, true, newIndent(currIndent,
+            indent, ml))
       echo()
       writeIndent(currIndent)
       writeJsonSep("]")
