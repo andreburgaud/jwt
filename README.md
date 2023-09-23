@@ -1,6 +1,6 @@
 # JSON Web Token (JWT)
 
-`jwt` is a command line (CLI) tool that encode or decode [JSON Web Tokens](https://jwt.io/) (JWT).
+`jwt` is a command line (CLI) tool to encode or decode [JSON Web Tokens](https://jwt.io/) (JWT).
 
 ## Usage
 
@@ -44,36 +44,10 @@ jwt decode --string eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODk
 }
 ```
 
-### Piping with jq
-
-```bash
-jwt decode tokens/hs256.token | jq
-```
-```json
-{
-  "header": {
-    "alg": "HS256",
-    "typ": "JWT"
-  },
-  "payload": {
-    "sub": "1234567890",
-    "name": "John Doe",
-    "iat": 1516239022
-  },
-  "signature": "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-}
-```
-
-The command line [jq](https://stedolan.github.io/jq/) highlights the syntax of the JSON data. On Windows, add option `-C` (colorize JSON) to the `jq` command, as follows:
-
-```bash
-jwt decode tokens\hs256.token | jq -C
-```
-
 ### From stdin
 
 ```bash
-cat tokens/hs256.token | jwt decode | jq
+cat tokens/hs256.token | jwt decode
 ```
 ```json
 {
@@ -105,10 +79,10 @@ jwt encode --key secret_key --string "$JWT_JSON"
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.-31VfEDt_2aatZ0NIjznd27ruqyeMC4zus1J3hjZlts
 ```
 
-### Pipe Encode, Decode, and Jq
+### Pipe Encode and Decode
 
 ```bash
-jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
+jwt encode --key secret_key tokens/hs256.json | jwt decode
 ```
 ```json
 {
@@ -131,7 +105,7 @@ jwt encode --key secret_key tokens/hs256.json | jwt decode | jq
 jwt --help
 ```
 ```
-                             JWT Command Line 0.9.0
+                             JWT Command Line 0.10.0
                        Copyright (c) 2021-2023 - Andre Burgaud
                                      MIT License
 Description:
@@ -153,8 +127,58 @@ Commands:
 
 ```
 
+## Development
+
+`jwt` is written in [Nim](https://nim-lang.org/), which needs to be installed to build `jwt`.
+
+### Debug Build
+
+To build a debug version of `jwt`, execute the following command:
+
+```bash
+nimble build
+```
+
+The executable will be available at the root of the project. For a simple test, on Linux or Mac OS, you can run:
+
+```bash
+./jwt decode tokens/hs256.token
+```
+
+### Release Build
+
+To build a debug version of `jwt`, execute the following command:
+
+```bash
+nimble release
+```
+
+The executable will be available in `bin/release`.
+
+### Test
+
+To execute the unit tests, execute the following command:
+
+```bash
+nimble test
+```
+
+### Build a Windows package on Linux
+
+to build a windows distribution on Linux:
+
+```bash
+nimble dist_xc_win64
+```
+
+The nimbe task `dist_xc_win64` will create a 64-bit release version and a zip package under `dist`.
+
+## License
+
+`jwt` is release under the [MIT License](/LICENSE)
+
 ## Resources
 
-* https://tools.ietf.org/html/rfc7519
-* https://jwt.io/
-* https://stedolan.github.io/jq/
+* [JSON Web Token (JWT) - RFC 7519](https://tools.ietf.org/html/rfc7519)
+* [JWT](https://jwt.io/)
+* [Nim](https://nim-lang.org/)
