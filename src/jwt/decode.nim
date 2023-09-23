@@ -98,7 +98,7 @@ proc writeFlattenJwtStr(data: string) =
     printError &"invalid JWT (decoded: '{jsonStr}')"
     raise
 
-  echo pretty jsonData
+  colorJson jsonData
 
 proc writeJwtStr(data: string, isFlatten: bool, isFormatDates: bool) =
   ## Writes a prettyfied JSON output to stdout, given a JWT string.
@@ -125,9 +125,9 @@ proc writeJwtStr(data: string, isFlatten: bool, isFormatDates: bool) =
       payloadNode["exp"] = convertTime(payloadNode["exp"])
     if payloadNode.hasKey("iat"):
       payloadNode["iat"] = convertTime(payloadNode["iat"])
-    echo pretty jsonData
+    colorJson jsonData
   else:
-    echo pretty jsonData
+    colorJson jsonData
 
 proc writeJwtFile(file: string, isFlatten: bool, isFormatDates: bool) =
   ## Write a prettified JSON output to stdout, given a JWT file.
