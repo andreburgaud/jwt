@@ -1,5 +1,5 @@
 import std/[cmdline, strformat, strutils]
-import jwt/[command, decode, encode, fmt, help, version]
+import jwt/[command, decode, encode, fmt, json, help, version]
 
 proc main* =
   ## Handles the command line argements parsing and dispatches the
@@ -22,6 +22,7 @@ proc main* =
   of "-v", "--version": cmd = VersionCommand()
   of "decode": cmd = DecodeCommand(args: rest)
   of "encode": cmd = EncodeCommand(args: rest)
+  of "json": cmd = JsonCommand(args: rest)
   else:
     if arg.startsWith('-'):
       printError &"unexpected option '{arg}'"

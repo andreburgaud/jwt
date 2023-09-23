@@ -56,112 +56,72 @@ proc writeIndent(indent: int) =
   stdout.write " ".repeat(indent)
 
 # From nim json
-
-proc indent(s: var string, i: int) =
-  s.add(spaces(i))
-
 proc newIndent(curr, indent: int, ml: bool): int =
   if ml: return curr + indent
   else: return indent
 
-proc nl(s: var string, ml: bool) =
-  s.add(if ml: "\n" else: " ")
-
-proc toColorJson(result: var string, node: JsonNode, indent = 2, ml = true,
-              lstArr = false, currIndent = 0) =
-  ## Modification of function toPretty https://github.com/nim-lang/Nim/blob/version-2-0/lib/pure/json.nim
+proc toColorJson(node: JsonNode, indent = 2, ml = true, lstArr = false, currIndent = 0) =
+  ## Modification of toPretty function https://github.com/nim-lang/Nim/blob/version-2-0/lib/pure/json.nim
   case node.kind
   of JObject:
     if lstArr:
-      result.indent(currIndent) # Indentation
       writeIndent(currIndent)
     if node.fields.len > 0:
-      result.add("{")
-      result.nl(ml) # New line
       printJsonSep "{"
       var i = 0
       for key, val in node.fields.pairs:
         if i > 0:
-          result.add(",")
-          result.nl(ml) # New Line
           printJsonSep ","
         inc i
         # Need to indent more than {
-        result.indent(newIndent(currIndent, indent, ml))
         writeIndent(newIndent(currIndent, indent, ml))
-        escapeJson(key, result)
         writeJsonKey(escapeJson(key))
-        result.add(": ")
         writeJsonSep(": ")
-        toColorJson(result, val, indent, ml, false,
-                 newIndent(currIndent, indent, ml))
-      result.nl(ml)
+        toColorJson(val, indent, ml, false, newIndent(currIndent, indent, ml))
       echo()
-      result.indent(currIndent) # indent the same as {
       writeIndent(currIndent)
-      result.add("}")
       writeJsonSep("}")
     else:
-      result.add("{}")
       writeJsonSep("{}")
   of JString:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
-    toUgly(result, node)
+    #toUgly(result, node)
     writeJsonString(&"\"{node.str}\"")
   of JInt:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
-    result.addInt(node.num)
     writeJsonInt(&"{node.num}")
   of JFloat:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
-    result.addFloat(node.fnum)
+    writeJsonInt(&"{node.fnum}")
   of JBool:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
-    result.add(if node.bval: "true" else: "false")
     if node.bval:
       writeJsonBool "true"
     else:
       writeJsonBool "false"
   of JArray:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
     if len(node.elems) != 0:
-      result.add("[")
-      result.nl(ml)
       printJsonSep("[")
       for i in 0..len(node.elems)-1:
         if i > 0:
-          result.add(",")
-          result.nl(ml) # New Line
           printJsonSep(",")
-        toColorJson(result, node.elems[i], indent, ml,
-            true, newIndent(currIndent, indent, ml))
-      result.nl(ml)
+        toColorJson(node.elems[i], indent, ml, true, newIndent(currIndent, indent, ml))
       echo()
-      result.indent(currIndent)
       writeIndent(currIndent)
-      result.add("]")
       writeJsonSep("]")
     else:
-      result.add("[]")
       writeJsonSep("[]")
   of JNull:
     if lstArr:
-      result.indent(currIndent)
       writeIndent(currIndent)
-    result.add("null")
     stdout.write "null"
 
 proc colorJson*(node: JsonNode) =
-  var res = ""
-  toColorJson(res, node)
+  toColorJson(node)
   echo()

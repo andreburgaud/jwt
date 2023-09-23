@@ -10,6 +10,7 @@ type
 const
   decodeCmd* = "decode"
   encodeCmd* = "encode"
+  jsonCmd* = "json"
   helpCmd* = "help"
   versionCmd* = "version"
 

@@ -20,8 +20,8 @@ proc usage() =
   printField &"  {app}", " [COMMAND] [OPTIONS] [ARGS]"
   echo()
   printInfo "Options:"
-  printField &"  -h, --help   ", "    Print help"
-  printField &"  -v, --version", "    Print version info"
+  printField "  -h, --help   ", "    Print help"
+  printField "  -v, --version", "    Print version info"
   echo()
   printInfo "Commands:"
   printField "  decode", "    Decode a b64 encoded JWT token into a valid JSON string"
