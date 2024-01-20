@@ -3,6 +3,7 @@ import std/strformat
 import command
 import common
 import fmt
+import system
 
 type
   VersionCommand* = ref object of Command
@@ -10,4 +11,4 @@ type
 
 method execute*(c: VersionCommand) =
   ## Print the app version
-  printSuccess &"{appName()} {ver}{suffix}"
+  printSuccess &"{appName()} {ver}{suffix} (compiled with Nim {NimVersion})"

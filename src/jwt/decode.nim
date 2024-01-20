@@ -16,7 +16,7 @@ proc usage() =
   styledWriteLine stdout, styleBright, "Decode a JSON Web Token", resetStyle
   echo()
   printInfo "Description:"
-  echo "  Parse a b64 encoded JSON Web Token (JWT) and decode the"
+  echo "  Parse a Base64 encoded JSON Web Token (JWT) and decode the"
   echo "  JWT Header and Payload into a valid JSON content."
   echo "  Convert dates (iat, exp) into human readable format,"
   echo "  unless the option '--raw' is passed at the command line."

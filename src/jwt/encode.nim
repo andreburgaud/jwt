@@ -18,7 +18,7 @@ proc usage() =
   styledWriteLine stdout, styleBright, "Encode a JSON Web Token", resetStyle
   echo()
   printInfo "Description:"
-  echo "  Encode a JSON Web Token into a b64 encoded token."
+  echo "  Encode a JSON Web Token into a Base64 encoded token."
   echo "  The JSON argument can be passed via standard input, file or string."
   echo()
   printInfo "Usage:"

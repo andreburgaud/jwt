@@ -105,9 +105,9 @@ jwt encode --key secret_key tokens/hs256.json | jwt decode
 jwt --help
 ```
 ```
-                             JWT Command Line 0.10.0
-                       Copyright (c) 2021-2023 - Andre Burgaud
-                                     MIT License
+                                       JWT Command Line 0.11.0
+                               Copyright (c) 2021-2024 - Andre Burgaud
+                                             MIT License
 Description:
   Manipulate (encode, or decode) JSON Web Tokens (JWT).
 
@@ -120,11 +120,10 @@ Options:
   -v, --version    Print version info
 
 Commands:
-  decode    Decode a b64 encoded JWT token into a valid JSON string
-  encode    Encode a JWT JSON file or string into a b64 encoded JWT token
+  decode    Decode a Base64 encoded JWT into a valid JSON string
+  encode    Encode a JSON file or string into a Base64 encoded JWT
 
   jwt [COMMAND] --help for more information on a specific command.
-
 ```
 
 ## Development
